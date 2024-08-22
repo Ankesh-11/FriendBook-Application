@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liked Users</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fafafa;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .user-list {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .user-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-picture {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 20px;
+            object-fit: cover;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-info h4 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .user-info p {
+            margin: 0;
+            color: #777;
+        }
+
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="user-list">
+    <h3 class="text-center">Users who liked this post</h3>
+
+    <!-- Display error message if present -->
+    <div th:if="${error}" class="error-message" th:text="${error}"></div>
+
+    <!-- Display list of users who liked the post -->
+    <div th:each="user : ${users}" class="user-item">
+        <img th:src="${user.image}" alt="User Picture" class="user-picture">
+        <div class="user-info">
+            <h4 th:text="${user.name}">User Name</h4>
+            <p th:text="'@' + ${user.username}">username</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

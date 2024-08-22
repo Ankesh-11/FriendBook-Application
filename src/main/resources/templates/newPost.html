@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Post - FriendBook</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .navbar-nav {
+            margin-left: auto;
+        }
+        .nav-link {
+            color: #000;
+            transition: color 0.3s, background-color 0.3s;
+        }
+        .nav-link:hover {
+            color: #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">FriendBook</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="/home">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/api/posts/create">Create Post</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/api/users/profile">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/logout">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Create Post Form -->
+<div class="container mt-4">
+    <h2>Create a New Post</h2>
+    <form id="createPostForm">
+        <div class="form-group">
+            <label for="postContent">Post Content</label>
+            <textarea id="postContent" class="form-control" rows="3" placeholder="What's on your mind?" ></textarea>
+        </div>
+        <div class="form-group">
+            <label for="postImageUrl">Image URL</label>
+            <input type="text" id="postImageUrl" class="form-control" placeholder="Enter image URL (optional)">
+        </div>
+        <button type="button" class="btn btn-primary" id="postButton">Post</button>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Retrieve the current user's email from sessionStorage
+        const userEmail = sessionStorage.getItem('userEmail');
+
+        // Function to create a new posta
+        function createPost() {
+            const postContent = $('#postContent').val();
+            const postImageUrl = $('#postImageUrl').val();
+
+            const postData = {
+                caption: postContent,
+                imagePost: postImageUrl,
+            };
+
+            $.ajax({
+                url: '/api/posts/create',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(postData),
+                headers: {
+                    'email': userEmail // Send email as request header
+                },
+                success: function(response) {
+                    alert('Post created successfully!');
+                    window.location.href = '/home'; // Redirect to home page after post creation
+                },
+                error: function(xhr) {
+                    alert('Failed to create post: ' + xhr.responseText);
+                }
+            });
+        }
+
+        // Bind the createPost function to the button click
+        $('#postButton').click(createPost);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .navbar .navbar-nav {
+            margin-left: 40px;
+        }
+        .post {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .post-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .post-header .username {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .post h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .post p {
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .post img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .comments-container {
+            margin-top: 15px;
+        }
+        .comment {
+            border-top: 1px solid #ddd;
+            padding: 10px 0;
+            margin-top: 5px;
+        }
+        .comment textarea {
+            width: 50%;
+            margin-top: 10px;
+        }
+        .btn-custom {
+            margin: 5px 0;
+        }
+        .actions{
+
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">FriendBook</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="/home"><i class="fa-solid fa-house"></i></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="/api/posts/create"><i class="fa-solid fa-plus"></i></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="/api/users/profile"><i class="fa-solid fa-user"></i></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#requestsModal"><i class="fa-solid fa-user-plus"></i></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#noticationModel"><i class="fa-solid fa-bell"></i></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="posts">
+        <div th:each="post : ${allPosts}" class="post" id="post-[[${post.id}]]">
+            <div class="post-header">
+                <img th:src="@{${post.getUser().getImage()}}" class="rounded-circle mr-3" style="width: 40px; height: 40px;"/>
+                <a th:href="@{/api/users/viewProfile/{username}(username=${post.user.username})}" class="username"
+                   th:text="${post.user.username}">Username</a>
+            </div>
+            <img th:src="@{${post.imagePost}}" alt="Post Image"/>
+            <p th:text="${post.caption}">Post Content</p>
+
+            <div class="actions">
+                <span  id="likeButton"
+                        th:id="'like-btn-' + ${post.id}"
+                        th:onclick="'toggleLike(' + ${post.id} + ')'"
+                        th:style="${likedPostsMap[post.id] ? 'display:none;' : 'display:block;'}">
+                    <i class="fa-regular fa-heart"></i>
+                </span>
+
+                <span  id="unlikeButton"
+                        th:id="'unlike-btn-' + ${post.id}"
+                        th:onclick="'toggleUnLike(' + ${post.id} + ')'"
+                        th:style="${likedPostsMap[post.id] ? 'display:block;' : 'display:none;'}">
+                        <i class="fa-solid fa-heart"></i>
+                </span>
+
+                <div th:id="'like-count-' + ${post.id}"
+                     th:onclick="'loadLikedUsers(' + ${post.id} + ')'">
+                    <span th:text="${post.likedByUser.size()}"></span>
+                </div>
+            </div>
+
+<!--            <div type="button"-->
+<!--                    th:id="'like-count-' + ${post.id}"-->
+<!--                    th:onclick="'loadLikedUsers(' + ${post.id} + ')'">-->
+<!--                 <span th:text="${post.likedByUser.size()}"></span>-->
+<!--            </div>-->
+
+            <div id="comments-[[${post.id}]]" class="comments-container">
+                <div th:each="comment : ${post.comments}" class="comment">
+                    <p><b><span th:text="${comment.user.username}">Username</span></b></p>
+                    <p th:text="${comment.content}">Comment content</p>
+                </div>
+                <form th:action="@{/api/comments/{postId}/comment(postId=${post.id})}" method="post">
+                    <textarea id="commentContent-[[${post.id}]]" name="content" class="form-control" placeholder="Add a comment"></textarea>
+                    <button type="submit" class="btn btn-success btn-custom">Add Comment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="requestsModal" tabindex="-1" role="dialog" aria-labelledby="requestsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestsModalLabel">Follow Requests</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="requests-results">
+                    <div th:if="${allRequests == null || #lists.isEmpty(allRequests)}">
+                        <p>No follow requests.</p>
+                    </div>
+                    <div th:each="user : ${allRequests}" class="user-card">
+                        <h4 th:text="${user.username}">Username</h4>
+                        <p th:text="${user.name}">User Full Name</p>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-success"
+                                    th:onclick="'acceptRequest(' + ${user.id} + ')'">Accept</button>
+                            <button type="button" class="btn btn-danger"
+                                    th:onclick="'declineRequest(' + ${user.id} + ')'">Decline</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="searchModal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchModalLabel">Search Users</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="searchForm">
+                    <div class="form-group">
+                        <input type="text" id="searchQuery" class="form-control" placeholder="Enter username or email" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+
+                <div id="search-results">
+                    <!-- Results will show here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="likesModal" tabindex="-1" role="dialog" aria-labelledby="likesModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="likesModalLabel">Users who liked this post</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <ul id="likedUsersList" class="list-group">
+                    <!-- List of users will be populated here via JavaScript -->
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+       $('#searchForm').submit(function(event) {
+           event.preventDefault();
+           const query = $('#searchQuery').val();
+
+           $.ajax({
+               url: '/home/search',
+               type: 'POST',
+               data: { q: query },
+               success: function(users) {
+                   $('#search-results').empty();
+                   if (users.length === 0) {
+                       $('#search-results').append('<p>No users found.</p>');
+                   } else {
+                       users.forEach(function(user) {
+                           $('#search-results').append(
+                               `<div class="user-card">
+                                   <h2>${user.username}</h2>
+                                   <p>${user.name}</p>
+                                   <a href="/api/users/viewProfile/${user.username}" class="btn btn-info">View Profile</a>
+                               </div>`
+                           );
+                       });
+                   }
+               },
+               error: function(xhr, status, error) {
+                   console.error('Search failed:', error);
+                   $('#search-results').empty();
+                   $('#search-results').append('<p>Failed to retrieve users. Please try again later.</p>');
+               }
+           });
+       });
+   });
+   function acceptRequest(userId) {
+    $.ajax({
+        url: `/api/users/accept/${userId}`,
+        type: 'POST',
+        success: function() {
+            location.reload();
+        },
+        error: function(err) {
+            console.error('Error accepting request:', err.responseText);
+            alert('Failed to accept request.');
+        }
+    });
+}
+
+function declineRequest(userId) {
+    $.ajax({
+        url: `/api/users/decline/${userId}`,
+        type: 'POST',
+        success: function() {
+            location.reload();
+        },
+        error: function(err) {
+            console.error('Error declining request:', err.responseText);
+            alert('Failed to decline request.');
+        }
+    });
+}
+
+
+   function toggleLike(postId) {
+   console.log(postId);
+   const url = `/api/posts/${postId}/like`;
+   const likeButton = $(`#like-btn-${postId}`);
+   const unlikeButton = $(`#unlike-btn-${postId}`);
+   const likeCount = $(`#like-count-${postId} span`);
+
+   $.ajax({
+       url: url,
+       type: 'POST',
+       success: function(response) {
+           console.log(response);
+           if (response.liked) {
+               likeButton.hide();
+               unlikeButton.show();
+           } else {
+               likeButton.show();
+               unlikeButton.hide();
+           }
+           likeCount.text(response.likeCount);
+       },
+       error: function(err) {
+           console.log('Error:', err.responseText);
+           alert('Failed to update like status.');
+       }
+   });
+}
+
+function toggleUnLike(postId) {
+   const url = `/api/posts/${postId}/unlike`;
+   const likeButton = $(`#like-btn-${postId}`);
+   const unlikeButton = $(`#unlike-btn-${postId}`);
+   const likeCount = $(`#like-count-${postId} span`);
+
+   $.ajax({
+       url: url,
+       type: 'POST',
+       success: function(response) {
+           if (response.liked) {
+               likeButton.hide();
+               unlikeButton.show();
+           } else {
+               likeButton.show();
+               unlikeButton.hide();
+           }
+           likeCount.text(response.likeCount);
+       },
+       error: function(err) {
+           console.log('Error:', err.responseText);
+           alert('Failed to update like status.');
+       }
+   });
+}
+
+function loadLikedUsers(postId) {
+   if (postId) {
+       console.log('Post ID:', postId);
+       $.ajax({
+           url: `/api/posts/${postId}/likedUser`,
+           type: 'GET',
+           success: function(response) {
+               if (Array.isArray(response)) {
+                   $('#likedUsersList').empty();
+
+                   response.forEach(function(user) {
+                       const profileImage = user.image;
+                       const listItem = `
+                           <li class="list-group-item d-flex align-items-center">
+                               <img src="${user.image}" alt="${user.username}'s profile picture" class="rounded-circle mr-3" style="width: 40px; height: 40px;">
+                               <span>${user.username}</span>
+                           </li>`;
+                       $('#likedUsersList').append(listItem);
+                   });
+                   $('#likesModal').modal('show');
+               } else {
+                   console.error('Expected an array of users but got:', response);
+               }
+           },
+           error: function(err) {
+               console.log('Error:', err.responseText);
+               alert('Failed to load liked users.');
+           }
+       });
+   } else {
+       console.error('Post ID is null or undefined');
+   }
+}
+
+</script>
+
+</body>
+</html>
