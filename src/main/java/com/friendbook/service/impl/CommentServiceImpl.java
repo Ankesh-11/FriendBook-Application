@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class CommentServiceImpl implements CommentService {
@@ -56,7 +57,7 @@ public class CommentServiceImpl implements CommentService {
 		postUser.setUsername(post.getUser().getUsername());
 		postUser.setImage(post.getUser().getImage());
 
-		notificationService.sendNotification(user, postUser, "commented on your post");
+//		notificationService.sendNotification(user, postUser, "commented on your post", post);
 
 		return newComment;
 	}
@@ -80,7 +81,7 @@ public class CommentServiceImpl implements CommentService {
 
 		Comment likedComment = commentRepository.save(comment);
 
-		notificationService.sendNotification(user, comment.getUser().toUserModel(), "liked your comment");
+		//notificationService.sendNotification(user, comment.getUser().toUserModel(), "liked your comment",);
 
 		return likedComment;
 	}
@@ -95,6 +96,13 @@ public class CommentServiceImpl implements CommentService {
 		comment.getLikedByUser().remove(userDto);
 
 		return commentRepository.save(comment);
+	}
+
+	@Override
+	public List<Comment> getCommentsByPostId(int postId) throws CommentException, UserException, PostException {
+		Post post = postService.findPostById(postId);
+		List<Comment> comments = post.getComments();
+		return comments;
 	}
 
 }

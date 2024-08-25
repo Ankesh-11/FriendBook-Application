@@ -29,6 +29,11 @@ public class Notification {
     @JsonBackReference
     private UserModel toUser;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "post_id")
+    @JsonBackReference
+    private Post post;
+
     private String message;
     private LocalDateTime createdAt = LocalDateTime.now();
 

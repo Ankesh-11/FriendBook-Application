@@ -40,7 +40,8 @@ public class Post {
 
 	private LocalDateTime createdAt;
 
-	@OneToMany
+//	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+@OneToMany
 	private List<Comment> comments = new ArrayList<>();
 
 	@Embedded

@@ -17,10 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 
 @Controller
@@ -250,6 +247,8 @@ public class usrCon {
         try{
             UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
             UserModel viewedUser = userService.findUserByUsername(username);
+            Map<Integer, Boolean> likedPostsMap = new HashMap<>();
+
             if(Objects.equals(currentUser.getUsername(), username))
             {
                 return "redirect:/api/users/profile";
@@ -279,6 +278,7 @@ public class usrCon {
                 model.addAttribute("allRequests", requests);
                 System.out.println(viewedUser.getUsername());
                 model.addAttribute("user", viewedUser);
+                model.addAttribute("currUser", currentUser);
                 model.addAttribute("username",viewedUser.getUsername());
                 model.addAttribute("profileImage",viewedUser.getImage());
                 model.addAttribute("followersCount", followService.getFollowersCount(viewedUser));

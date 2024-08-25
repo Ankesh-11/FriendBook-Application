@@ -6,6 +6,8 @@ import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
 import com.friendbook.entities.Comment;
 
+import java.util.List;
+
 public interface CommentService {
     Comment createComment(Comment comment, Integer postId, Integer userId) throws PostException, UserException;
 
@@ -14,4 +16,6 @@ public interface CommentService {
 	Comment likeComment(Integer commentId, Integer userId) throws CommentException, UserException;
 
 	Comment unlikeComment(Integer commentId, Integer userId) throws CommentException, UserException;
+
+    List<Comment> getCommentsByPostId(int postId) throws CommentException, UserException, PostException;
 }

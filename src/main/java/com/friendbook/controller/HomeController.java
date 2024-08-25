@@ -86,6 +86,7 @@ public class HomeController {
                 Set<UserDto> requests = followService.getFollowRequests(loggedInUser.getId());
                 model.addAttribute("allRequests", requests);
                 model.addAttribute("user", loggedInUser);
+                model.addAttribute("profileImage",loggedInUser.getImage());
                 model.addAttribute("allPosts", allPosts);
                 model.addAttribute("likedPostsMap", likedPostsMap);
                 return "home";
@@ -115,11 +116,12 @@ public class HomeController {
     }
 
     @PutMapping("/posts/{postId}/like")
-    public ResponseEntity<Post> likePost(@PathVariable Integer postId, @RequestParam("email") String email) {
+    public ResponseEntity<Post> likePost(@PathVariable Integer postId, @RequestParam("email") String email,HttpSession session) {
         try {
+            UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
             Optional<UserModel> user = userRepository.findByEmail(email);
             if (user.isPresent()) {
-                Post likedPost = postService.likePost(postId, user.get().getId());
+                Post likedPost = postService.likePost(postId, user.get(),loggedInUser);
                 return new ResponseEntity<>(likedPost, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);

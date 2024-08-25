@@ -52,12 +52,33 @@ public class PostCon {
         }
         return new ResponseEntity<>(createdPost, HttpStatus.CREATED);
     }
-
-    @GetMapping("/all/{userId}")
-    public ResponseEntity<List<Post>> findPostByUserId(@PathVariable Integer userId) throws UserException {
-        List<Post> posts = postService.findPostByUserId(userId);
-        return new ResponseEntity<>(posts, HttpStatus.OK);
+    @PostMapping("/delete/{postId}")
+    public ResponseEntity<String> deletePostHandler(@PathVariable Integer postId,HttpSession session) throws UserException {
+        UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
+        try {
+            postService.deletePost(postId, currentUser.getId());
+            return new ResponseEntity<>("Post deleted successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
+    @GetMapping("/all/{userId}")
+    public ResponseEntity<Map<String, Object>> findPostByUserId(@PathVariable Integer userId) throws UserException {
+        List<Post> posts = postService.findPostByUserId(userId);
+        Map<Integer, Boolean> likedPostsMap = new HashMap<>();
+
+        for (Post post : posts) {
+            boolean likedByCurrentUser = post.getLikedByUser().stream()
+                    .anyMatch(user -> user.getId().equals(userId));
+            likedPostsMap.put(post.getId(), likedByCurrentUser);
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("posts", posts);
+        response.put("likedPostsMap", likedPostsMap);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 
     @GetMapping("/following/{userIds}")
     public ResponseEntity<List<Post>> findAllPostByUserIdsHandler(@PathVariable List<Integer> userIds) throws PostException, UserException {
@@ -65,11 +86,25 @@ public class PostCon {
         return new ResponseEntity<>(posts, HttpStatus.OK);
     }
 
+//    @GetMapping("/{postId}")
+//    public String findPostByIdHandler(@PathVariable Integer postId, Model model) throws PostException {
+//        Post post = postService.findPostById(postId);
+//        model.addAttribute("post", post);
+//        return "home"; // Return the Thymeleaf template name
+//    }
     @GetMapping("/{postId}")
-    public String findPostByIdHandler(@PathVariable Integer postId, Model model) throws PostException {
-        Post post = postService.findPostById(postId);
-        model.addAttribute("post", post);
-        return "home"; // Return the Thymeleaf template name
+    public ResponseEntity<Post> getPostDetails(@PathVariable int postId) {
+           try
+           {
+               Post post = postService.findPostById(postId);
+               if (post != null) {
+                   return ResponseEntity.ok(post);
+               } else {
+                   return ResponseEntity.notFound().build();
+               }
+           } catch (PostException e) {
+               return ResponseEntity.badRequest().build();
+           }
     }
 
 //    @PostMapping("/{postId}/like")
@@ -182,7 +217,7 @@ public class PostCon {
         UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
         Optional<UserModel> user = userRepository.findByEmail(loggedInUser.getEmail());
         if (user.isPresent()) {
-            Post likedPost = postService.likePost(postId, user.get().getId());
+            Post likedPost = postService.likePost(postId, user.get(),loggedInUser);
             Map<String, Object> response = new HashMap<>();
             response.put("liked", true);
             response.put("posts", likedPost);

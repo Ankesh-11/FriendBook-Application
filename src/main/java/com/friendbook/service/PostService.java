@@ -17,7 +17,7 @@ public interface PostService {
 
 	List<Post> findAllPost() throws PostException;
 
-	public String deletePost(Integer postId, Integer userId) throws UserException, PostException;
+	public void deletePost(Integer postId, Integer userId) throws UserException, PostException;
 
 	public List<Post> findPostByUserId(Integer userId) throws UserException;
 
@@ -29,7 +29,7 @@ public interface PostService {
 
 	public String unsavePost(Integer postId, Integer userId) throws PostException, UserException;
 
-	public Post likePost(Integer postId, Integer userId) throws PostException, UserException;
+	public Post likePost(Integer postId, UserModel userId, UserModel currentUser) throws PostException, UserException;
 
 	public Post unlikePost(Integer postId, Integer userId) throws PostException, UserException;
 

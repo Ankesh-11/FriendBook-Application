@@ -13,11 +13,13 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"follower", "following", "followRequests", "notifications"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "users")
 public class UserModel {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@EqualsAndHashCode.Include
 	private Integer id;
 
 	private String username;
@@ -31,7 +33,7 @@ public class UserModel {
 	private String password;
 
 	@Embedded
-	@ElementCollection
+	@ElementCollection(fetch = FetchType.EAGER)
 	private Set<UserDto> follower = new HashSet<UserDto>();
 
 	@Embedded

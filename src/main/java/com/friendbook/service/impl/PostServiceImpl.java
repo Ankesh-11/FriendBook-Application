@@ -3,15 +3,19 @@ package com.friendbook.service.impl;
 import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.UserDto;
+import com.friendbook.entities.Comment;
+import com.friendbook.entities.Notification;
 import com.friendbook.entities.Post;
 import com.friendbook.entities.UserModel;
+import com.friendbook.repository.CommentRepository;
+import com.friendbook.repository.NotificationRepository;
 import com.friendbook.repository.PostRepository;
 import com.friendbook.repository.UserRepository;
+import com.friendbook.service.CommentService;
 import com.friendbook.service.PostService;
 import com.friendbook.service.UserService;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import org.hibernate.query.results.PositionalSelectionsNotAllowedException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,33 +35,11 @@ public class PostServiceImpl implements PostService {
 	@Autowired
 	private UserRepository userRepository;
 
-//	@Override
-//	public Post createPost(Post post, Integer userId) throws UserException {
-//		UserModel user = userRepository.findById(userId)
-//				.orElseThrow(() -> new UserException("User not found"));
-//
-//		Post newPost = new Post();
-//		newPost.setCaption(post.getCaption());
-//		newPost.setImagePost(post.getImagePost());
-//		newPost.setLocation(post.getLocation());
-//		newPost.setCreatedAt(LocalDateTime.now());
-//
-//		UserDto userDto = new UserDto();
-//		userDto.setEmail(user.getEmail());
-//		userDto.setId(user.getId());
-//		userDto.setName(user.getName());
-//		userDto.setUsername(user.getUsername());
-//
-//		newPost.setUser(userDto);
-//
-//		// Save the new post
-//		Post savedPost = postRepository.save(newPost);
-//		// Optionally update user's posts
-//		//user.getPosts().add(savedPost);
-//		userRepository.save(user);
-//
-//		return savedPost;
-//	}
+	@Autowired
+	private NotificationRepository notificationRepository;
+
+	@Autowired
+	CommentRepository commentRepository;
 
 	@Override
 	public Post createPost(Post post, Integer userId) throws UserException {
@@ -98,16 +80,20 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public String deletePost(Integer postId, Integer userId) throws UserException, PostException {
+	@Transactional
+	public void deletePost(Integer postId, Integer userId) throws UserException, PostException {
 		Post post = findPostById(postId);
 		UserModel user = userService.findUserById(userId);
 
 		if (post.getUser().getId().equals(user.getId())) {
-			postRepository.deleteById(post.getId());
-			return "Post Deleted Successfully";
-		}
 
-		throw new PostException("You can't delete othere user's post");
+			notificationRepository.deleteByPostId(postId);
+			commentRepository.deleteByPostId(postId);
+			postRepository.deleteById(post.getId());
+		} else {
+			throw new UserException("You do not have permission to delete this post");
+		}
+		return;
 	}
 
 	@Override
@@ -170,18 +156,35 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Post likePost(Integer postId, Integer userId) throws PostException, UserException {
+	@Transactional
+	public Post likePost(Integer postId, UserModel likedUser , UserModel currUser) throws PostException, UserException {
 		Post post = findPostById(postId);
-		UserModel user = userService.findUserById(userId);
-
+		UserModel toUser = userService.findUserById(post.getUser().getId());
 		UserDto userDto = new UserDto();
-		userDto.setEmail(user.getEmail());
-		userDto.setId(user.getId());
-		userDto.setName(user.getName());
-		userDto.setUsername(user.getUsername());
-		userDto.setImage(user.getImage());
+		userDto.setEmail(likedUser.getEmail());
+		userDto.setId(likedUser.getId());
+		userDto.setName(likedUser.getName());
+		userDto.setUsername(likedUser.getUsername());
+		userDto.setImage(likedUser.getImage());
 
 		post.getLikedByUser().add(userDto);
+		boolean x =  !toUser.equals(likedUser);
+		System.out.println(x);
+		if(x)
+		{
+			Notification notification = new Notification();
+			notification.setFromUser(currUser);
+			notification.setToUser(toUser);
+			notification.setMessage(currUser.getUsername() + " liked your post.");
+			notification.setCreatedAt(LocalDateTime.now());
+			notification.setPost(post);
+
+			notificationRepository.save(notification);
+
+			toUser.getNotifications().add(notification);
+
+		}
+		userRepository.save(toUser);
 
 		return postRepository.save(post);
 	}

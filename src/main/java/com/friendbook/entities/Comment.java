@@ -30,7 +30,6 @@ public class Comment {
 			@AttributeOverride(name = "email", column = @Column(name = "user_email")) })
 	private UserDto user;
 
-	@NonNull
 	private String content;
 	private LocalDateTime createdAt;
 
@@ -38,7 +37,7 @@ public class Comment {
 	@ElementCollection
 	private Set<UserDto> likedByUser = new HashSet<UserDto>();
 
-	@ManyToOne(fetch = FetchType.EAGER)
+	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "post_id")
 	@JsonBackReference
 	private Post post;

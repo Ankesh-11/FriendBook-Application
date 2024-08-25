@@ -68,15 +68,6 @@ public class FollowServiceImpl implements FollowService {
                 user.getFollower().add(toUserDto);
                 requester.getFollowing().add(fromUserDto);
 
-                Notification notification = new Notification();
-                notification.setFromUser(user);
-                notification.setToUser(requester);
-                notification.setMessage("You are now following " + user.getUsername());
-                notification.setCreatedAt(LocalDateTime.now());
-
-                Notification savedNotification = notificationRepository.save(notification);
-                requester.getNotifications().add(savedNotification);
-
                 userRepository.save(user);
                 userRepository.save(requester);
             }else {
@@ -170,7 +161,6 @@ public class FollowServiceImpl implements FollowService {
         return "You have unfollowed " + unfollowUser.getUsername();
     }
 
-
     @Override
     public Object getFollowersCount(UserModel viewedUser) {
         return viewedUser.getFollower().size();
@@ -224,7 +214,6 @@ public class FollowServiceImpl implements FollowService {
         return currentUser.getFollowRequests().stream()
                 .anyMatch(request -> request.getId().equals(targetUserId));
     }
-
 
     @Override
     public Set<UserDto> getFollowRequests(Integer userId) throws UserException {
