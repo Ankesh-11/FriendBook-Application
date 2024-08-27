@@ -91,7 +91,7 @@ public class usrCon {
         }
     }
 
-    @DeleteMapping("/removeFollower/{toUserId}")
+    @PostMapping("/removeFollower/{toUserId}")
     public String removeFollower(@PathVariable Integer toUserId, HttpSession session, Model model) {
         try {
             UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");

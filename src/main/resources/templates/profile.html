@@ -509,7 +509,7 @@
         if (confirm("Are you sure you want to delete this post?")) {
             $.ajax({
                 url: `/api/posts/delete/${postId}`,
-                method: 'Delete',
+                method: 'Post',
                 success: function(response) {
                 console.log(response);
                     alert("Post deleted successfully.");
@@ -712,7 +712,7 @@ function postUnLike(postId) {
         function removeFollowersList(userId) {
             $.ajax({
                 url: `/api/users/removeFollower/${userId}`,
-                type: 'Delete',
+                type: 'Post',
                 success: function() {
                 console.log("come in function");
                     location.reload();

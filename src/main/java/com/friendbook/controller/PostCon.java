@@ -48,7 +48,7 @@ public class PostCon {
         return new ResponseEntity<>(createdPost, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/delete/{postId}")
+    @PostMapping("/delete/{postId}")
     public ResponseEntity<String> deletePostHandler(@PathVariable Integer postId,HttpSession session) throws UserException {
         UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
         try {
