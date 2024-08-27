@@ -1,6 +1,6 @@
 package com.friendbook.dto;
 
-import com.friendbook.entities.Post;
+import com.friendbook.entity.Post;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

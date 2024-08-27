@@ -3,9 +3,9 @@ package com.friendbook.service.impl;
 import com.friendbook.Exception.CommentException;
 import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
-import com.friendbook.entities.Comment;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Comment;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.CommentRepository;
 import com.friendbook.repository.PostRepository;
 import com.friendbook.service.CommentService;
@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentServiceImpl implements CommentService {
@@ -68,7 +70,19 @@ public class CommentServiceImpl implements CommentService {
 				.orElseThrow(() -> new CommentException("Comment not exist with id: " + commentId));
 	}
 
+	@Override
+	public void deleteComment(Integer commentId, Integer currentUserId) throws PostException, UserException {
 
+		Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new PostException("Comment not found"));
+		if (!comment.getUser().getId().equals(currentUserId)) {
+			throw new UserException("You do not have permission to delete this comment.");
+		}
+
+		Post post = postService.findPostById(comment.getPost().getId());
+		post.getComments().remove(comment);
+		postRepository.save(post);
+		commentRepository.deleteById(commentId);
+	}
 
 	@Override
 	public Comment likeComment(Integer commentId, Integer userId) throws CommentException, UserException {
@@ -102,7 +116,12 @@ public class CommentServiceImpl implements CommentService {
 	public List<Comment> getCommentsByPostId(int postId) throws CommentException, UserException, PostException {
 		Post post = postService.findPostById(postId);
 		List<Comment> comments = post.getComments();
-		return comments;
+		if (comments == null || comments.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return comments.stream()
+				.sorted((c1, c2) -> c2.getCreatedAt().compareTo(c1.getCreatedAt()))
+				.collect(Collectors.toList());
 	}
 
 }

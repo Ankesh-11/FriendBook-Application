@@ -3,15 +3,13 @@ package com.friendbook.service.impl;
 import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.UserDto;
-import com.friendbook.entities.Comment;
-import com.friendbook.entities.Notification;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Notification;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.CommentRepository;
 import com.friendbook.repository.NotificationRepository;
 import com.friendbook.repository.PostRepository;
 import com.friendbook.repository.UserRepository;
-import com.friendbook.service.CommentService;
 import com.friendbook.service.PostService;
 import com.friendbook.service.UserService;
 
@@ -65,21 +63,6 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public List<Post> findAllPost(Integer userId) throws PostException {
-		return List.of();
-	}
-
-
-	@Override
-	public List<Post> findAllPost() throws PostException {
-		List<Post> posts = postRepository.findAll();
-		if (posts.size() > 0) {
-			return posts;
-		}
-		throw new PostException("Post Not Exist");
-	}
-
-	@Override
 	@Transactional
 	public void deletePost(Integer postId, Integer userId) throws UserException, PostException {
 		Post post = findPostById(postId);
@@ -109,7 +92,6 @@ public class PostServiceImpl implements PostService {
 	@Override
 	public Post findPostById(Integer postId) throws PostException {
 		Optional<Post> optionalPost = postRepository.findById(postId);
-
 		if (optionalPost.isPresent()) {
 			return optionalPost.get();
 		}
@@ -118,9 +100,8 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public List<Post> findAllPostByUserIds(List<Integer> userIds) throws PostException, UserException {
+	public List<Post> findAllPostByUserIds(List<Integer> userIds) throws PostException {
 		List<Post> posts = postRepository.findAllPostByUserIds(userIds);
-
 		if (posts.isEmpty()) {
 			throw new PostException("No post avalable.");
 		}
@@ -128,47 +109,19 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public String savePost(Integer postId, Integer userId) throws PostException, UserException {
-
-//		Post post = findPostById(postId);
-//		UserModel user = userService.findUserById(userId);
-//
-//		if (!user.getSavedPost().contains(post)) {
-//			user.getSavedPost().add(post);
-//			userRepository.save(user);
-//		}
-
-		return "Post Saved Successfully";
-	}
-
-	@Override
-	public String unsavePost(Integer postId, Integer userId) throws PostException, UserException {
-
-//		Post post = findPostById(postId);
-//		UserModel user = userService.findUserById(userId);
-//
-//		if (user.getSavedPost().contains(post)) {
-//			user.getSavedPost().remove(post);
-//			userRepository.save(user);
-//		}
-
-		return "Post Remove Successfully";
-	}
-
-	@Override
 	@Transactional
-	public Post likePost(Integer postId, UserModel likedUser , UserModel currUser) throws PostException, UserException {
+	public Post likePost(Integer postId, UserModel currUser) throws PostException, UserException {
 		Post post = findPostById(postId);
 		UserModel toUser = userService.findUserById(post.getUser().getId());
 		UserDto userDto = new UserDto();
-		userDto.setEmail(likedUser.getEmail());
-		userDto.setId(likedUser.getId());
-		userDto.setName(likedUser.getName());
-		userDto.setUsername(likedUser.getUsername());
-		userDto.setImage(likedUser.getImage());
+		userDto.setEmail(currUser.getEmail());
+		userDto.setId(currUser.getId());
+		userDto.setName(currUser.getName());
+		userDto.setUsername(currUser.getUsername());
+		userDto.setImage(currUser.getImage());
 
 		post.getLikedByUser().add(userDto);
-		boolean x =  !toUser.equals(likedUser);
+		boolean x =  !toUser.equals(currUser);
 		System.out.println(x);
 		if(x)
 		{
@@ -180,7 +133,6 @@ public class PostServiceImpl implements PostService {
 			notification.setPost(post);
 
 			notificationRepository.save(notification);
-
 			toUser.getNotifications().add(notification);
 
 		}
@@ -238,5 +190,10 @@ public class PostServiceImpl implements PostService {
 		UserDto userDtoToCheck = new UserDto();
 		userDtoToCheck.setId(id);
 		return post.getLikedByUser().contains(userDtoToCheck);
+	}
+
+	@Override
+	public List<Post> findAllPostsLikedByUser(Integer userId) {
+		return postRepository.findAllPostsLikedByUser(userId);
 	}
 }

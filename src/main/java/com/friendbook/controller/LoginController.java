@@ -1,6 +1,6 @@
 package com.friendbook.controller;
 
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.UserRepository;
 import com.friendbook.service.UserService;
 import jakarta.servlet.http.HttpSession;
@@ -59,6 +59,8 @@ public class LoginController {
             }
             session.setAttribute("loggedInUser", user);
             model.addAttribute("user", user);
+            model.addAttribute("userImgae",user.getImage());
+            System.out.println(user.getImage());
             return "redirect:/home";
         }
     }

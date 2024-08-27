@@ -1,4 +1,4 @@
-package com.friendbook.entities;
+package com.friendbook.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;

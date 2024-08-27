@@ -1,7 +1,6 @@
 package com.friendbook.dto;
 
-import com.friendbook.entities.UserModel;
-import jakarta.persistence.Embeddable;
+import com.friendbook.entity.UserModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

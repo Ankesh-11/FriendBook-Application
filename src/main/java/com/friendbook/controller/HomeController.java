@@ -1,9 +1,9 @@
 package com.friendbook.controller;
 
+import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
-import com.friendbook.entities.Comment;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.UserRepository;
 import com.friendbook.service.CommentService;
 import com.friendbook.service.FollowService;
@@ -42,59 +42,69 @@ public class HomeController {
     public String homePagePost(HttpSession session, Model model) {
         UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
         if (loggedInUser != null) {
+
             try {
-                Set<UserDto> followers = followService.getFollowers(loggedInUser.getId());
                 Set<UserDto> following = followService.getFollowing(loggedInUser.getId());
 
                 Set<Integer> userIds = new HashSet<>();
-                Set<Post> allPosts = new HashSet<>();
+                Set<Post> allPost = new HashSet<>();
                 Map<Integer, Boolean> likedPostsMap = new HashMap<>();
-
-                try {
+                try{
                     List<Post> posts = postService.findPostByUserId(loggedInUser.getId());
-                    allPosts.addAll(posts);
+                    allPost.addAll(posts);
+                    for (UserDto followings : following) {
+                        if (!followings.getId().equals(loggedInUser.getId())) {
+                            userIds.add(followings.getId());
+                        }
+                    }
                 } catch (UserException e) {
-                    System.out.println(e.getMessage());
-                }
-
-                for (UserDto follower : followers) {
-                    if (!follower.getId().equals(loggedInUser.getId())) {
-                        userIds.add(follower.getId());
-                    }
-                }
-                for (UserDto followings : following) {
-                    if (!followings.getId().equals(loggedInUser.getId())) {
-                        userIds.add(followings.getId());
-                    }
+                    model.addAttribute("exception",e.getMessage());
                 }
 
                 for (Integer userId : userIds) {
                     try {
                         List<Post> posts = postService.findPostByUserId(userId);
-                        allPosts.addAll(posts);
+                        allPost.addAll(posts);
                     } catch (UserException e) {
                         System.out.println(e.getMessage());
                     }
                 }
 
-                for (Post post : allPosts) {
+                for (Post post : allPost) {
                     boolean likedByCurrentUser = post.getLikedByUser().stream()
                             .anyMatch(user -> user.getId().equals(loggedInUser.getId()));
                     likedPostsMap.put(post.getId(), likedByCurrentUser);
                 }
 
-                Set<UserDto> requests = followService.getFollowRequests(loggedInUser.getId());
+                Set<UserDto> requests = followService.getFollowRequests(loggedInUser);
+                Map<Integer, Boolean> isFollowingMap = new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowing = followService.isFollowing(loggedInUser.getId(), request.getId());
+                    isFollowingMap.put(request.getId(), isFollowing);
+                }
+
+                Map<Integer, Boolean> isInRequestMap= new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowingNow = followService.isRequests(loggedInUser.getId(), request.getId());
+                    System.out.println(isFollowingNow);
+                    isInRequestMap.put(request.getId(), isFollowingNow);
+                }
+
+                model.addAttribute("isInRequestMap", isInRequestMap);
+
                 model.addAttribute("allRequests", requests);
+                model.addAttribute("isFollowingMap", isFollowingMap);
                 model.addAttribute("user", loggedInUser);
                 model.addAttribute("profileImage",loggedInUser.getImage());
-                model.addAttribute("allPosts", allPosts);
+                model.addAttribute("allPosts", allPost);
                 model.addAttribute("likedPostsMap", likedPostsMap);
                 return "home";
+
             } catch (UserException e) {
-                e.printStackTrace();
                 model.addAttribute("error", e.getMessage());
                 return "home";
             }
+
         }
         return "redirect:/signin";
     }
@@ -105,30 +115,29 @@ public class HomeController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<UserModel>> searchUserHandler(@RequestParam("q") String query, Model model) {
+    public ResponseEntity<?> searchUserHandler(@RequestParam("q") String query,HttpSession session) {
         List<UserModel> users = null;
         try{
             users = userService.searchUser(query);
         } catch (UserException e) {
-            System.out.println(e.getMessage());
+            new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<List<UserModel>>(users, HttpStatus.OK);
     }
 
     @PutMapping("/posts/{postId}/like")
-    public ResponseEntity<Post> likePost(@PathVariable Integer postId, @RequestParam("email") String email,HttpSession session) {
+    public ResponseEntity<?> likePost(@PathVariable Integer postId, @RequestParam("email") String email,HttpSession session)  {
         try {
             UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
-            Optional<UserModel> user = userRepository.findByEmail(email);
-            if (user.isPresent()) {
-                Post likedPost = postService.likePost(postId, user.get(),loggedInUser);
+
+            if (loggedInUser!= null) {
+                Post likedPost = postService.likePost(postId,loggedInUser);
                 return new ResponseEntity<>(likedPost, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (PostException | UserException e) {
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
         }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @PutMapping("/posts/{postId}/unlike")

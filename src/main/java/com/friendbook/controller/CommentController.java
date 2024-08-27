@@ -4,18 +4,16 @@ package com.friendbook.controller;
 import com.friendbook.Exception.CommentException;
 import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
-import com.friendbook.entities.Comment;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Comment;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.UserRepository;
 import com.friendbook.service.CommentService;
 import com.friendbook.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +27,7 @@ public class CommentController {
 	private CommentService commentService;
 	private UserService userService;
 	private UserRepository userRepository;
+
 	@PostMapping("/{postId}/comment")
 	public ResponseEntity<String> addCommentToPost(
 			@PathVariable Integer postId,
@@ -42,10 +41,10 @@ public class CommentController {
 				commentService.createComment(comment, postId, user.get().getId());
 				return ResponseEntity.ok("Comment added successfully.");
 			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found.");
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
 			}
 		} catch (PostException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error adding comment: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error adding comment: " + e.getMessage());
 		} catch (UserException e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
 		}
@@ -59,7 +58,7 @@ public class CommentController {
 			return new ResponseEntity<>(comments, HttpStatus.OK);
 		} catch (PostException | UserException | CommentException e) {
 			System.out.println(e.getMessage());
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 

@@ -153,7 +153,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/api/users/profile">
-                    <img th:src="${user.image}" class="rounded-circle mr-3" style="width: 30px; height: 30px;">
+                    <img th:src="${profileImage}" class="rounded-circle mr-3" style="width: 30px; height: 30px;">
                 </a>
             </li>
         </ul>
@@ -225,7 +225,7 @@
                     </div>
                     <div class="form-group">
                         <label for="postImageUrl">Image URL</label>
-                        <input type="text" id="postImageUrl" class="form-control" placeholder="Enter image URL (optional)">
+                        <input type="text" id="postImageUrl" class="form-control" placeholder="Enter image URL" required>
                     </div>
                 </form>
             </div>
@@ -351,6 +351,13 @@
                                     th:onclick="'acceptRequest(' + ${user.id} + ')'">Accept</button>
                             <button type="button" class="btn btn-danger"
                                     th:onclick="'declineRequest(' + ${user.id} + ')'">Decline</button>
+
+                            <button type="button" th:if="${!isFollowingMap[user.id] && !isInRequestMap[user.id]}"
+                                    class="btn btn-primary"
+                                    th:onclick="'sendFollowRequest(' + ${user.id} + ')'">Follow</button>
+                            <button type="button" th:if="${!isFollowingMap[user.id] && isInRequestMap[user.id]}"
+                                    class="btn btn-primary"
+                                     disabled>requested</button>
                         </div>
                     </div>
                 </div>
@@ -366,6 +373,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script>
+
     function submitComment(postId) {
         const commentContent = $(`#commentContent-${postId}`).val();
         console.log(commentContent);
@@ -451,15 +459,12 @@
                                $('#notificationList').append('<li class="list-group-item">No notifications.</li>');
                            } else {
                                notifications.forEach(function(notification) {
-                                 console.log('Notification:', notification);
-                                console.log('Message:', notification.message);
-                                console.log('From Username:', notification.fromUsername);
-                                console.log('To Username:', notification.toUsername);
+
                                 const listItem = `
                                    <li class="list-group-item d-flex align-items-center">
-                                      <a href="/api/users/viewProfile/${notification.fromUsername}">
-                                      <img src="${notification.userImage}" class="rounded-circle mr-3" style="width: 40px; height: 40px;">
-                                       <span>${notification.message}</span>
+                                      <a action="/api/users/viewProfile/${notification.fromUsername}">
+                                          <img src="${notification.userImage}" class="rounded-circle mr-3" style="width: 40px; height: 40px;">
+                                           <span>${notification.message}</span>
                                        </a>
                                    </li>`;
                                    $('#notificationList').append(
@@ -630,38 +635,60 @@
             });
         }
 
+        function sendFollowRequest(userId) {
+            $.ajax({
+                url: `/api/users/sendRequest/${userId}`,
+                type: 'POST',
+                success: function() {
+                console.log("come in function");
+                    location.reload();
+                },
+                error: function(err) {
+                    console.error('Error sending follow request:', err.responseText);
+                    alert('Failed to send follow request.');
+                }
+            });
+        }
+
+
         $(document).ready(function() {
             const userEmail = sessionStorage.getItem('userEmail');
 
             function createPost() {
                 const postContent = $('#postContent').val();
                 const postImageUrl = $('#postImageUrl').val();
+               if (!postImageUrl) {
+                    alert('Image URL is required.');
+                    return;
+               }
+               else{
+                    const postData = {
+                        caption: postContent,
+                        imagePost: postImageUrl,
+                    };
 
-                const postData = {
-                    caption: postContent,
-                    imagePost: postImageUrl,
-                };
-
-                $.ajax({
-                    url: '/api/posts/create',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(postData),
-                    headers: {
-                        'email': userEmail
-                    },
-                    success: function(response) {
-                        alert('Post created successfully!');
-                        $('#createPostModal').modal('hide');
-                        window.location.href = '/home';
-                    },
-                    error: function(xhr) {
-                        alert('Failed to create post: ' + xhr.responseText);
-                    }
-                });
+                    $.ajax({
+                        url: '/api/posts/create',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(postData),
+                        headers: {
+                            'email': userEmail
+                        },
+                        success: function(response) {
+                            alert('Post created successfully!');
+                            $('#createPostModal').modal('hide');
+                            window.location.href = '/home';
+                        },
+                        error: function(xhr) {
+                            alert('Failed to create post: ' + xhr.responseText);
+                        }
+                    });
+                }
             }
             $('#postButton').click(createPost);
         });
+
 
 </script>
 

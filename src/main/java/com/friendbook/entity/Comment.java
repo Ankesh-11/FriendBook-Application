@@ -1,5 +1,6 @@
-package com.friendbook.entities;
+package com.friendbook.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import com.friendbook.dto.UserDto;
 import jakarta.persistence.*;
@@ -9,9 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -19,8 +18,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Post")
-public class Post {
+@Table(name = "Commments")
+public class Comment {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
@@ -30,23 +29,17 @@ public class Post {
 			@AttributeOverride(name = "email", column = @Column(name = "user_email")) })
 	private UserDto user;
 
-	@Column
-	private String caption;
-
-	@Column(nullable = false)
-	private String imagePost;
-
-	private String location;
+	private String content;
 
 	private LocalDateTime createdAt;
 
-//	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-@OneToMany
-	private List<Comment> comments = new ArrayList<>();
-
 	@Embedded
 	@ElementCollection
-	@JoinTable(name = "likedByUsers", joinColumns = @JoinColumn(name = "user_id"))
 	private Set<UserDto> likedByUser = new HashSet<UserDto>();
+
+	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@JoinColumn(name = "post_id")
+	@JsonBackReference
+	private Post post;
 
 }

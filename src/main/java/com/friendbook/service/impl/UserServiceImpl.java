@@ -1,10 +1,14 @@
 package com.friendbook.service.impl;
 
 import com.friendbook.Exception.UserException;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Comment;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
+import com.friendbook.repository.CommentRepository;
 import com.friendbook.repository.PostRepository;
 import com.friendbook.repository.UserRepository;
+import com.friendbook.service.CommentService;
+import com.friendbook.service.PostService;
 import com.friendbook.service.UserService;
 import com.friendbook.dto.UserDto;
 
@@ -16,19 +20,27 @@ import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService {
-	private static Set<Long> membershipNumber = new HashSet<>();
+	private static Set<String> userName = new HashSet<>();
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	CommentRepository commentRepository;
 
 //	@Autowired
 //	private PasswordEncoder passwordEncoder;
 
 //	@Autowired
 //	private JwtTokenProvider jwtTokenProvider;
-	
+
 	@Autowired
-	private PostRepository postRepository;
+	PostRepository postRepository;
+	@Autowired
+	PostService postService;
+
+	@Autowired
+	CommentService commentService;
 
 	@Override
 	public List<UserModel> findAllUser() throws UserException {
@@ -106,10 +118,6 @@ public class UserServiceImpl implements UserService {
 		throw new UserException("user not exist with username " + username);
 	}
 
-	@Override
-	public String unfollowUser(Integer reqUserId, Integer unfollowUserId) throws UserException {
-		return "";
-	}
 
 	@Override
 	public List<UserModel> findUsersByUserIds(List<Integer> userIds) {
@@ -128,24 +136,57 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserModel updateUserDetails(UserModel updatedUser, UserModel existingUser) throws UserException {
+        if (updatedUser.getBio() != null) {
+            existingUser.setBio(updatedUser.getBio());
+        }
 
-		if (updatedUser.getBio() != null) {
-			existingUser.setBio(updatedUser.getBio());
+        if (updatedUser.getName() != null) {
+            existingUser.setName(updatedUser.getName());
+        }
+
+        if (updatedUser.getMobile() != null) {
+            existingUser.setMobile(updatedUser.getMobile());
+        }
+
+        if (updatedUser.getImage() != null) {
+            existingUser.setImage(updatedUser.getImage());
+        }
+
+        userRepository.save(existingUser);
+        List<Post> posts = postService.findPostByUserId(existingUser.getId());
+        for (Post post : posts) {
+			post.setUser(new UserDto(existingUser.getId(),existingUser.getUsername(),existingUser.getImage(),existingUser.getName()));
+			postRepository.save(post);
+        }
+
+		List<Post> likedPost = postService.findAllPostsLikedByUser(existingUser.getId());
+		for (Post post : likedPost) {
+			Set<UserDto> likedByUsers = post.getLikedByUser();
+			for (UserDto userDto : likedByUsers) {
+				if (userDto.getId().equals(existingUser.getId())) {
+					userDto.setEmail(existingUser.getEmail());
+					userDto.setName(existingUser.getName());
+					userDto.setImage(existingUser.getImage());
+				}
+			}
+			postRepository.save(post);
 		}
 
-		if (updatedUser.getName() != null) {
-			existingUser.setName(updatedUser.getName());
+		List<Comment> comments = commentRepository.findAllCommentsByUserId(existingUser.getId());
+		for (Comment comment : comments) {
+			UserDto userDto = comment.getUser();
+			if (userDto.getId().equals(existingUser.getId())) {
+				userDto.setEmail(existingUser.getEmail());
+				userDto.setName(existingUser.getName());
+				userDto.setImage(existingUser.getImage());
+				commentRepository.save(comment);
+			}
 		}
 
-		if (updatedUser.getMobile() != null) {
-			existingUser.setMobile(updatedUser.getMobile());
-		}
+		return existingUser;
 
-		if (updatedUser.getImage() != null) {
-			existingUser.setImage(updatedUser.getImage());
-		}
-		return userRepository.save(existingUser);
-	}
+    }
+
 
 	private String getUsername(String name)
 	{
@@ -155,12 +196,12 @@ public class UserServiceImpl implements UserService {
 		int min = 100;
 		int max = 99999;
 		long randomNumber = random.nextInt(max - min + 1) + min;
-		while (membershipNumber.contains(randomNumber))
+		while (userName.contains(firstName + randomNumber))
 		{
 			randomNumber = random.nextInt(max - min + 1) + min;
 		}
-		membershipNumber.add(randomNumber);
-		return firstName + randomNumber;
+		userName.add(firstName + randomNumber);
+		return firstName+randomNumber;
 	}
 
 }

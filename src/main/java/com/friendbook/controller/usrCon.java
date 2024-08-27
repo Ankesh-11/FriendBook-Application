@@ -1,11 +1,11 @@
 package com.friendbook.controller;
 
+;
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.UserDto;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.UserRepository;
-import com.friendbook.response.MessageResponse;
 import com.friendbook.service.FollowService;
 import com.friendbook.service.PostService;
 import com.friendbook.service.UserService;
@@ -36,18 +36,6 @@ public class usrCon {
     @Autowired
     private PostService postService;
 
-    @GetMapping("/all")
-    public ResponseEntity<List<UserModel>> findAllUserHandler() throws UserException {
-        List<UserModel> users = userService.findAllUser();
-        return new ResponseEntity<List<UserModel>>(users, HttpStatus.OK);
-    }
-
-    @GetMapping("id/{id}")
-    public ResponseEntity<UserModel> findUserByIdHandler(@PathVariable Integer id) throws UserException {
-        UserModel user = userService.findUserById(id);
-
-        return new ResponseEntity<UserModel>(user, HttpStatus.OK);
-    }
 
     @GetMapping("username/{username}")
     public ResponseEntity<UserModel> findByUsernameHandler(@PathVariable("username") String username)
@@ -57,37 +45,33 @@ public class usrCon {
         return new ResponseEntity<UserModel>(user, HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/m/{userIds}")
-    public ResponseEntity<List<UserModel>> findAllUserByUserIdsHandler(@PathVariable List<Integer> userIds) {
-        List<UserModel> users = userService.findUsersByUserIds(userIds);
-
-        return new ResponseEntity<List<UserModel>>(users, HttpStatus.ACCEPTED);
-    }
-
     @GetMapping("/search")
-    public ResponseEntity<List<UserModel>> searchUserHandler(@RequestParam("q") String query) {
+    public ResponseEntity<?> searchUserHandler(@RequestParam("q") String query) {
         List<UserModel> users = null;
         try{
             users = userService.searchUser(query);
         } catch (UserException e) {
-            System.out.println(e.getMessage());
+            new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<List<UserModel>>(users, HttpStatus.OK);
     }
 
-    @GetMapping("/updateProfile")
-    public String updateProfile(HttpSession session, Model model) {
-        UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
-        model.addAttribute("user", currentUser);
-        return "editProfile";
-    }
 
     @PostMapping("/updateProfile")
-    public String updateUserHandler(@ModelAttribute UserModel updatedUser, HttpSession session) throws UserException {
-        UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
-        UserModel userWithUpdates = userService.updateUserDetails(updatedUser,currentUser);
-        session.setAttribute("loggedInUser", userWithUpdates);
-        return "redirect:/api/users/profile"; // Redirect to the profile page after update
+    public String updateUserHandler(@ModelAttribute UserModel updatedUser, HttpSession session,Model model)  {
+        try {
+            UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
+            if (currentUser == null) {
+                return "redirect:/signin";
+            }
+            UserModel userWithUpdates = userService.updateUserDetails(updatedUser, currentUser);
+            session.setAttribute("loggedInUser", userWithUpdates);
+        }
+        catch (UserException e) {
+            model.addAttribute("userError",e.getMessage());
+        }
+        return "redirect:/api/users/profile";
+
     }
 
     @PostMapping("/sendRequest/{toUserId}")
@@ -97,8 +81,26 @@ public class usrCon {
             if (currentUser == null) {
                 return "redirect:/signin";
             }
-            followService.sendFollowRequest(toUserId, currentUser.getId());
+            followService.sendFollowRequest(toUserId, currentUser);
             UserModel targetUser = userService.findUserById(toUserId);
+            return "redirect:/api/users/viewProfile/"+targetUser.getUsername();
+
+        } catch (UserException e) {
+            model.addAttribute("error",e.getMessage());
+            return "viewProfile";
+        }
+    }
+
+    @DeleteMapping("/removeFollower/{toUserId}")
+    public String removeFollower(@PathVariable Integer toUserId, HttpSession session, Model model) {
+        try {
+            UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
+            if (currentUser == null) {
+                return "redirect:/signin";
+            }
+            UserModel targetUser = userService.findUserById(toUserId);
+            followService.removeFollower(targetUser, currentUser);
+
             return "redirect:/api/users/viewProfile/"+targetUser.getUsername();
 
         } catch (UserException e) {
@@ -111,11 +113,10 @@ public class usrCon {
     public String acceptFollowRequest(@PathVariable Integer requesterId,HttpSession session, Model model) {
         try {
             UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
-            UserModel requesterUser = userService.findUserById(requesterId);
             if (currentUser == null) {
                 return "redirect:/signin";
             }
-            followService.acceptFollowRequest(currentUser.getId(), requesterId);
+            followService.acceptFollowRequest(currentUser, requesterId);
             UserModel targetUser = userService.findUserById(requesterId);
             return "redirect:/api/users/viewProfile/"+targetUser.getUsername();
         } catch (UserException e) {
@@ -131,13 +132,11 @@ public class usrCon {
             if (currentUser == null) {
                 return "redirect:/signin";
             }
-            followService.declineFollowRequest(currentUser.getId(), requesterId);
             UserModel targetUser = userService.findUserById(requesterId);
-
+            followService.declineFollowRequest(currentUser, targetUser);
             boolean isFollowing = followService.isFollowing(currentUser.getId(), targetUser.getId());
             boolean isFollower = followService.isFollower(currentUser.getId(), targetUser.getId());
-            boolean isInMyFollowRequests = followService.isInMyFollowRequests(currentUser.getId(),targetUser.getId());
-            boolean isRequests = followService.isRequests(currentUser.getId(),targetUser.getId());
+
             List<Post> posts = new ArrayList<>();
             if (isFollowing || isFollower) {
                 posts = postService.findPostByUserId(requesterId);
@@ -148,6 +147,7 @@ public class usrCon {
             return "viewProfile";
         }
     }
+
     @PostMapping("/cancelRequest/{userId}")
     public String cancelRequest(@PathVariable Integer userId,HttpSession session, Model model) {
         try {
@@ -155,36 +155,10 @@ public class usrCon {
             if (currentUser == null) {
                 return "redirect:/signin";
             }
-            followService.cancelFollowRequest(currentUser.getId(), userId);
             UserModel targetUser = userService.findUserById(userId);
+            followService.cancelFollowRequest(currentUser, targetUser);
+
             return "redirect:/api/users/viewProfile/"+targetUser.getUsername();
-        } catch (UserException e) {
-            model.addAttribute("error",e.getMessage());
-            return "viewProfile";
-        }
-    }
-
-    @PostMapping("/followback/{requesterId}")
-    public String followBack( @PathVariable Integer requesterId,HttpSession session, Model model) {
-        try {
-            UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
-            if (currentUser == null) {
-                return "redirect:/signin";			}
-            followService.followBack(currentUser.getId(), requesterId);
-            UserModel targetUser = userService.findUserById(requesterId);
-
-            boolean isFollowing = followService.isFollowing(currentUser.getId(), requesterId);
-            boolean isFollower = followService.isFollower(currentUser.getId(), requesterId);
-            boolean isInMyFollowRequests = followService.isInMyFollowRequests(currentUser.getId(),requesterId);
-            boolean isRequests = followService.isRequests(currentUser.getId(),requesterId);
-
-            model.addAttribute("isFollowing", isFollowing);
-            model.addAttribute("isFollower", isFollower);
-            model.addAttribute("isInFollowRequests", isInMyFollowRequests);
-            model.addAttribute("isRequested", isRequests);
-            model.addAttribute("user", targetUser);
-            System.out.println(targetUser.getUsername());
-            return "viewProfile";
         } catch (UserException e) {
             model.addAttribute("error",e.getMessage());
             return "viewProfile";
@@ -194,51 +168,50 @@ public class usrCon {
     @GetMapping("/allRequests")
     public String getFollowRequests(HttpSession session,Model model) {
         UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
-        try {
+
             if(currentUser== null){
                 return "redirect:/signin";
             }
-            Set<UserDto> requests = followService.getFollowRequests(currentUser.getId());
+            Set<UserDto> requests = followService.getFollowRequests(currentUser);
             model.addAttribute("allRequest",requests);
-        } catch (UserException e) {
-            model.addAttribute("error",e.getMessage());
-        }
+
         return "redirect:/api/users/viewProfile/"+currentUser.getUsername();
     }
 
     @PostMapping("/unfollow/{unfollowUserId}")
     public String unfollowUserHandler(@PathVariable Integer unfollowUserId,
-                                                               HttpSession session) {
+                                      HttpSession session,Model model) {
         try {
             UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
             if (currentUser == null) {
                 return "redirect:/signin";
             }
-            UserModel unfollwUser = userService.findUserById(unfollowUserId);
-            String message = followService.unfollowUser(currentUser.getId(), unfollowUserId);
-            return "redirect:/api/users/viewProfile/"+unfollwUser.getUsername();
+            UserModel unfollowUser = userService.findUserById(unfollowUserId);
+            followService.unfollowUser(currentUser, unfollowUser);
+            return "redirect:/api/users/viewProfile/"+unfollowUser.getUsername();
         } catch (UserException e) {
+            model.addAttribute("error",e.getMessage());
             return "viewProfile";
         }
     }
-
     @GetMapping("/{userId}/followers")
-    public ResponseEntity<Set<UserDto>> viewFollowers(@PathVariable Integer userId) {
-        try {
+    public ResponseEntity<?> viewFollowers(@PathVariable Integer userId,HttpSession session) {
+        try
+        {
             Set<UserDto> followers = followService.getFollowers(userId);
             return new ResponseEntity<>(followers, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (UserException e) {
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND );
         }
     }
 
     @GetMapping("/{userId}/following")
-    public ResponseEntity<Set<UserDto>> viewFollowing(@PathVariable Integer userId) {
+    public ResponseEntity<?> viewFollowing(@PathVariable Integer userId) {
         try {
             Set<UserDto> following = followService.getFollowing(userId);
             return new ResponseEntity<>(following, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND );
         }
     }
 
@@ -248,15 +221,17 @@ public class usrCon {
             UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
             UserModel viewedUser = userService.findUserByUsername(username);
             Map<Integer, Boolean> likedPostsMap = new HashMap<>();
-
+            if(currentUser == null) {
+                return "redirect:/signin";
+            }
             if(Objects.equals(currentUser.getUsername(), username))
             {
                 return "redirect:/api/users/profile";
             }
-
-            if (viewedUser == null || currentUser == null) {
+            if (viewedUser == null ) {
                 return "redirect:/home";
             }
+
             if(currentUser != null){
 
                 boolean isFollowing = followService.isFollowing(currentUser.getId(), viewedUser.getId());
@@ -274,11 +249,28 @@ public class usrCon {
                         model.addAttribute("postCount",0);
                     }
                 }
-                Set<UserDto> requests = followService.getFollowRequests(currentUser.getId());
+
+                Set<UserDto> requests = followService.getFollowRequests(currentUser);
+                Map<Integer, Boolean> isFollowingMap = new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowingNow = followService.isFollowing(currentUser.getId(), request.getId());
+                    isFollowingMap.put(request.getId(), isFollowingNow);
+                }
+
+                Map<Integer, Boolean> isInRequestMap= new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowingNow = followService.isRequests(currentUser.getId(), request.getId());
+                    System.out.println(isFollowingNow);
+                    isInRequestMap.put(request.getId(), isFollowingNow);
+                }
+
+                model.addAttribute("isInRequestMap", isInRequestMap);
                 model.addAttribute("allRequests", requests);
-                System.out.println(viewedUser.getUsername());
+                model.addAttribute("isFollowingMap", isFollowingMap);
+
                 model.addAttribute("user", viewedUser);
                 model.addAttribute("currUser", currentUser);
+                model.addAttribute("currUserImage",currentUser.getImage());
                 model.addAttribute("username",viewedUser.getUsername());
                 model.addAttribute("profileImage",viewedUser.getImage());
                 model.addAttribute("followersCount", followService.getFollowersCount(viewedUser));
@@ -290,14 +282,11 @@ public class usrCon {
                 model.addAttribute("isRequested", isRequests);
                 model.addAttribute("followers",followService.getFollowers(viewedUser.getId()));
                 model.addAttribute("followings",followService.getFollowing(viewedUser.getId()));
-                return "viewProfile";
             }
         } catch (UserException e) {
-            System.out.println(e.getMessage());
             model.addAttribute("error",e.getMessage());
-            return "viewProfile";
         }
-        return "redirect:/search";
+        return "viewProfile";
     }
 
     @GetMapping("/profile")
@@ -315,8 +304,24 @@ public class usrCon {
                 } catch (UserException e) {
                     model.addAttribute("error",e.getMessage());
                 }
-                Set<UserDto> requests = followService.getFollowRequests(currentUser.getId());
+                Set<UserDto> requests = followService.getFollowRequests(currentUser);
+
+                Map<Integer, Boolean> isFollowingMap = new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowingNow = followService.isFollowing(currentUser.getId(), request.getId());
+                    isFollowingMap.put(request.getId(), isFollowingNow);
+                }
+
+                Map<Integer, Boolean> isInRequestMap= new HashMap<>();
+                for (UserDto request : requests) {
+                    boolean isFollowingNow = followService.isRequests(currentUser.getId(), request.getId());
+                    System.out.println(isFollowingNow);
+                    isInRequestMap.put(request.getId(), isFollowingNow);
+                }
+
+                model.addAttribute("isInRequestMap", isInRequestMap);
                 model.addAttribute("allRequests", requests);
+                model.addAttribute("isFollowingMap", isFollowingMap);
                 model.addAttribute("user", currentUser);
                 model.addAttribute("post", posts);
                 model.addAttribute("followers",followService.getFollowers(currentUser.getId()));

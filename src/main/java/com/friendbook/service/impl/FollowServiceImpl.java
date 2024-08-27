@@ -2,8 +2,8 @@ package com.friendbook.service.impl;
 
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.UserDto;
-import com.friendbook.entities.Notification;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Notification;
+import com.friendbook.entity.UserModel;
 import com.friendbook.service.FollowService;
 import com.friendbook.repository.NotificationRepository;
 import com.friendbook.repository.UserRepository;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Set;
 @Service
 @Transactional
@@ -29,16 +30,11 @@ public class FollowServiceImpl implements FollowService {
     private NotificationRepository notificationRepository;
 
     @Override
-    public void sendFollowRequest(Integer toUserId, Integer fromUserId) throws UserException {
-        UserModel fromUser = userRepository.findById(fromUserId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserModel toUser = userRepository.findById(toUserId)
-                .orElseThrow(() -> new UserException("User not found"));
+    public void sendFollowRequest(Integer toUserId, UserModel fromUser) throws UserException {
 
+        UserModel toUser = userService.findUserById(toUserId);
         UserDto fromUserDto = new UserDto(fromUser.getId(), fromUser.getUsername(), fromUser.getEmail(), fromUser.getName(), fromUser.getImage(),fromUser.getMobile(),fromUser.getBio());
-
         toUser.getFollowRequests().add(fromUserDto);
-
         Notification notification = new Notification();
         notification.setFromUser(fromUser);
         notification.setToUser(toUser);
@@ -53,14 +49,12 @@ public class FollowServiceImpl implements FollowService {
     }
 
     @Override
-    public void acceptFollowRequest(Integer userId, Integer requesterId) throws UserException {
-        try{
-            UserModel user = userService.findUserById(userId);
+    public void acceptFollowRequest(UserModel user, Integer requesterId) throws UserException {
+
             UserModel requester = userService.findUserById(requesterId);
 
             UserDto fromUserDto = new UserDto(user.getId(), user.getUsername(), user.getEmail(), user.getName(), user.getImage(),user.getMobile(),user.getBio());
             UserDto toUserDto = new UserDto(requester.getId(), requester.getUsername(), requester.getEmail(), requester.getName(), requester.getImage(),requester.getMobile(),requester.getBio());
-            System.out.println("condition :"+user.getFollowRequests().stream().anyMatch(dto -> dto.getId().equals(requester.getId())));
 
             if (user.getFollowRequests().stream().anyMatch(dto -> dto.getId().equals(requester.getId()))) {
 
@@ -69,37 +63,32 @@ public class FollowServiceImpl implements FollowService {
                 requester.getFollowing().add(fromUserDto);
 
                 userRepository.save(user);
+
+                Notification notification = new Notification();
+                notification.setFromUser(user);
+                notification.setToUser(requester);
+                notification.setMessage(user.getUsername() + " accepted your follow request.");
+                notification.setCreatedAt(LocalDateTime.now());
+
+                notificationRepository.save(notification);
+                requester.getNotifications().add(notification);
                 userRepository.save(requester);
-            }else {
-                System.out.println("condition false");
             }
-        }catch (Exception e){
-            throw new UserException("Follow request not found");
-        }
     }
 
     @Override
-    public void declineFollowRequest(Integer userId, Integer requesterId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserModel requester = userRepository.findById(requesterId)
-                .orElseThrow(() -> new UserException("User not found"));
+    public void declineFollowRequest(UserModel user, UserModel requester) throws UserException {
 
         UserDto toUserDto = new UserDto(requester.getId(), requester.getUsername(), requester.getEmail(), requester.getName(), requester.getImage(),requester.getMobile(),requester.getBio());
-
         if (user.getFollowRequests().removeIf(dto -> dto.getId().equals(toUserDto.getId()))) {
             userRepository.save(user);
         } else {
             throw new UserException("Follow request not found");
         }
     }
-    @Override
-    public void cancelFollowRequest(Integer userId, Integer sendToUserId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserModel requester = userRepository.findById(sendToUserId)
-                .orElseThrow(() -> new UserException("User not found"));
 
+    @Override
+    public void cancelFollowRequest(UserModel user, UserModel requester) throws UserException {
         UserDto toUserDto = new UserDto(user.getId(), user.getUsername(), user.getEmail(), user.getName(), user.getImage(),user.getMobile(),user.getBio());
 
         if (requester.getFollowRequests().removeIf(dto -> dto.getId().equals(toUserDto.getId()))) {
@@ -108,39 +97,24 @@ public class FollowServiceImpl implements FollowService {
             throw new UserException("Follow request not found");
         }
     }
+
     @Override
-    public void followBack(Integer userId, Integer requesterId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserModel requester = userRepository.findById(requesterId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserDto fromUserDto = new UserDto(user.getId(), user.getUsername(), user.getEmail(), user.getName(), user.getImage(),user.getMobile(),user.getBio());
-        UserDto toUserDto = new UserDto(requester.getId(), requester.getUsername(), requester.getEmail(), requester.getName(), requester.getImage(),requester.getMobile(),requester.getBio());
+    public void removeFollower(UserModel targetUser, UserModel currentUser)  {
 
-        if (!user.getFollowing().stream().anyMatch(dto -> dto.getId().equals(requester.getId()))) {
-            user.getFollowing().add(toUserDto);
-            requester.getFollower().add(fromUserDto);
+            UserDto currentUserDto = new UserDto(currentUser.getId(), currentUser.getUsername(), currentUser.getEmail(), currentUser.getName(), currentUser.getImage(), currentUser.getMobile(), currentUser.getBio());
+            UserDto targetUserDto = new UserDto(targetUser.getId(), targetUser.getUsername(), targetUser.getEmail(), targetUser.getName(), targetUser.getImage(), targetUser.getMobile(), targetUser.getBio());
 
-            Notification notification = new Notification();
-            notification.setMessage("You are now following " + requester.getUsername());
-            notification.setCreatedAt(LocalDateTime.now());
-            notification.setFromUser(user);
-            Notification savedNotification = notificationRepository.save(notification);
-            user.getNotifications().add(notification);
+            currentUser.getFollower().removeIf(dto -> dto.getId().equals(targetUserDto.getId()));
 
-            userRepository.save(user);
-            userRepository.save(requester);
-        } else {
-            throw new UserException("Already following");
-        }
+            targetUser.getFollowing().removeIf(dto -> dto.getId().equals(currentUserDto.getId()));
+
+            userRepository.save(currentUser);
+            userRepository.save(targetUser);
+
     }
 
     @Override
-    public String unfollowUser(Integer reqUserId, Integer unfollowUserId) throws UserException {
-        UserModel reqUser = userRepository.findById(reqUserId)
-                .orElseThrow(() -> new UserException("User not found"));
-        UserModel unfollowUser = userRepository.findById(unfollowUserId)
-                .orElseThrow(() -> new UserException("User not found"));
+    public void unfollowUser(UserModel reqUser, UserModel unfollowUser) throws UserException {
 
         UserDto currUserDto = new UserDto(reqUser.getId(), reqUser.getUsername(), reqUser.getEmail(), reqUser.getName(), reqUser.getImage(), reqUser.getMobile(), reqUser.getBio());
         UserDto otherUserDto = new UserDto(unfollowUser.getId(), unfollowUser.getUsername(), unfollowUser.getEmail(), unfollowUser.getName(), unfollowUser.getImage(), unfollowUser.getMobile(), unfollowUser.getBio());
@@ -158,7 +132,6 @@ public class FollowServiceImpl implements FollowService {
         }
         userRepository.save(reqUser);
         userRepository.save(unfollowUser);
-        return "You have unfollowed " + unfollowUser.getUsername();
     }
 
     @Override
@@ -216,23 +189,27 @@ public class FollowServiceImpl implements FollowService {
     }
 
     @Override
-    public Set<UserDto> getFollowRequests(Integer userId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
+    public Set<UserDto> getFollowRequests(UserModel user)  {
         return user.getFollowRequests();
     }
 
     @Override
     public Set<UserDto> getFollowers(Integer userId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
-        return user.getFollower();
+        Optional<UserModel> user = userRepository.findById(userId);
+        if(user.isEmpty())
+        {
+            throw new UserException("User not found");
+        }
+        return user.get().getFollower();
     }
 
     @Override
     public Set<UserDto> getFollowing(Integer userId) throws UserException {
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException("User not found"));
-        return user.getFollowing();
+        Optional<UserModel> user = userRepository.findById(userId);
+        if(user.isEmpty())
+        {
+            throw new UserException("User not found");
+        }
+        return user.get().getFollowing();
     }
 }

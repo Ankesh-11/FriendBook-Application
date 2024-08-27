@@ -3,9 +3,9 @@ package com.friendbook.service.impl;
 
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.NotificationDTO;
-import com.friendbook.entities.Notification;
-import com.friendbook.entities.Post;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.Notification;
+import com.friendbook.entity.Post;
+import com.friendbook.entity.UserModel;
 import com.friendbook.repository.NotificationRepository;
 import com.friendbook.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,14 +39,14 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
-    public void acceptFollowRequest(Integer userId, Integer requesterId) throws UserException {
+    public void acceptFollowRequest(UserModel user, Integer requesterId) throws UserException {
         FollowServiceImpl followService = new FollowServiceImpl();
-        followService.acceptFollowRequest(userId, requesterId);
+        followService.acceptFollowRequest(user, requesterId);
     }
 
-    public void declineFollowRequest(Integer userId, Integer requesterId) throws UserException {
+    public void declineFollowRequest(UserModel user, UserModel requesterUser) throws UserException {
         FollowServiceImpl  followService = new FollowServiceImpl ();
-        followService.declineFollowRequest(userId, requesterId);
+        followService.declineFollowRequest(user, requesterUser);
     }
     @Autowired
     private NotificationRepository notificationRepository;

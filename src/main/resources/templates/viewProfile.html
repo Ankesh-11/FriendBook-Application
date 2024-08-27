@@ -168,9 +168,9 @@
                 <a class="nav-link" href="/home"><i class="fa-solid fa-house"></i></a>
             </li>
 
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-toggle="modal" data-target="#requestsModal"><i class="fa-solid fa-user-plus"></i></a>
-            </li>
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link" href="#" data-toggle="modal" data-target="#requestsModal"><i class="fa-solid fa-user-plus"></i></a>-->
+<!--            </li>-->
             <li class="nav-item">
                 <a class="nav-link" href="#" data-toggle="modal" data-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i></a>
             </li>
@@ -181,7 +181,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/api/users/profile">
-                    <img th:src="${currUser.image}" class="rounded-circle mr-3" style="width: 30px; height: 30px;">
+                    <img  th:src="${currUserImage}" class="rounded-circle mr-3" style="width: 30px; height: 30px;">
                 </a>
             </li>
         </ul>
@@ -194,7 +194,10 @@
         <h2 th:text="${user.username}">username</h2>
         <p class="profile-bio" th:text="${user.bio}">User Bio :</p>
         <div class="stats">
-            <div><span th:text="${postCount}"></span> posts</div>
+            <div>
+                <span  th:text="${postCount}"></span>
+                posts
+            </div>
             <div>
                 <a th:if="${isFollower or isFollowing}" href="#" id="followersLink" th:onclick="'showFollowersModal(' + ${user.id} + ')'">
                     <span th:text="${user.follower.size()}"></span> followers
@@ -212,7 +215,6 @@
                 <span th:text="${user.following.size()}"></span> following
             </div>
         </div>
-
         <div class="button-group">
             <div th:if="${isInFollowRequests and !isFollower}">
                 <form th:action="@{/api/users/accept/{userId}(userId=${user.id})}" method="post">
@@ -250,8 +252,7 @@
 </div>
 
 <div class="post-grid" th:if="${posts != null}">
-    <div th:each="post : ${posts}" class="post" th:onclick="'showPostModal(' + ${post.user.id} + ')'">
-        <div class="post-username" th:text="${user.username}">Username</div>
+    <div th:if="${isFollowing}" th:each="post : ${posts}" class="post" th:onclick="'showPostModal(' + ${post.user.id} + ')'">
         <img th:src="@{${post.imagePost}}" alt="Post Image">
     </div>
 </div>
@@ -342,6 +343,13 @@
                                     th:onclick="'acceptRequest(' + ${user.id} + ')'">Accept</button>
                             <button type="button" class="btn btn-danger"
                                     th:onclick="'declineRequest(' + ${user.id} + ')'">Decline</button>
+
+                            <button type="button" th:if="${!isFollowingMap[user.id] && !isInRequestMap[user.id]}"
+                                    class="btn btn-primary"
+                                    th:onclick="'sendFollowRequest(' + ${user.id} + ')'">Follow</button>
+                            <button type="button" th:if="${!isFollowingMap[user.id] && isInRequestMap[user.id]}"
+                                    class="btn btn-primary"
+                                    disabled>requested</button>
                         </div>
                     </div>
                 </div>
@@ -723,13 +731,18 @@ $.ajax({
    method: 'GET',
    success: function(data) {
        if (Array.isArray(data)) {
-           let followersHtml = data.map(user =>
-               `<div class="user-item">
-               <a href="/api/users/viewProfile/${user.username}">
-                   <img src="${user.image}" alt="User Image" class="img-thumbnail">
-                   <span>${user.username}</span>
-               </a>
-               </div>`).join('');
+           let followersHtml = data.map(user => {
+                            const userImage = user.image? user.image : 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Default_pfp.svg';
+                            console.log(userImage);
+                            return `
+                                <div class="user-item">
+                                    <a href="/api/users/viewProfile/${user.username}">
+                                        <img src="${userImage}" alt="" >
+                                        <span>${user.username}</span>
+                                    </a>
+                                </div>
+                            `;
+                        }).join('');
            $('#followersList').html(followersHtml);
        } else {
            $('#followersList').html('<p>No followers found.</p>');

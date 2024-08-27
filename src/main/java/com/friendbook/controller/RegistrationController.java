@@ -2,7 +2,7 @@ package com.friendbook.controller;
 
 import com.friendbook.Exception.UserException;
 
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.UserModel;
 import com.friendbook.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

@@ -3,8 +3,7 @@ package com.friendbook.controller;
 
 import com.friendbook.Exception.UserException;
 import com.friendbook.dto.NotificationDTO;
-import com.friendbook.entities.Notification;
-import com.friendbook.entities.UserModel;
+import com.friendbook.entity.UserModel;
 import com.friendbook.service.UserService;
 import com.friendbook.service.impl.NotificationService;
 import jakarta.servlet.http.HttpSession;
@@ -36,24 +35,26 @@ public class NotificationController {
         }
     }
 
-    @PostMapping("/accept/{requesterId}")
-    public ResponseEntity<String> acceptFollowRequest(@RequestHeader("Authorization") String token, @PathVariable Integer requesterId) {
-        try {
-            UserModel user = userService.findUserProfile(token);
-            notificationService.acceptFollowRequest(user.getId(), requesterId);
-            return ResponseEntity.ok("Follow request accepted");
-        } catch (UserException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @PostMapping("/decline/{userId}/{requesterId}")
-    public ResponseEntity<String> declineFollowRequest(@PathVariable Integer userId, @PathVariable Integer requesterId) {
-        try {
-            notificationService.declineFollowRequest(userId, requesterId);
-            return ResponseEntity.ok("Follow request declined");
-        } catch (UserException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PostMapping("/accept/{requesterId}")
+//    public ResponseEntity<String> acceptFollowRequest(@RequestHeader("Authorization") String token, @PathVariable Integer requesterId) {
+//        try {
+//            UserModel user = userService.findUserProfile(token);
+//            notificationService.acceptFollowRequest(user, requesterId);
+//            return ResponseEntity.ok("Follow request accepted");
+//        } catch (UserException e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
+//
+//    @PostMapping("/decline/{userId}/{requesterId}")
+//    public ResponseEntity<String> declineFollowRequest(@PathVariable Integer userId, @PathVariable Integer requesterId) {
+//        try {
+//            UserModel user = userService.findUserById(userId);
+//            UserModel requester = userService.findUserById(requesterId);
+//            notificationService.declineFollowRequest(user, requester);
+//            return ResponseEntity.ok("Follow request declined");
+//        } catch (UserException e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 }
