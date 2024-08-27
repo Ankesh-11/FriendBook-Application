@@ -26,9 +26,7 @@ public class UserModel {
 	private String name;
 	private String email;
 	private String mobile;
-	private String website;
 	private String bio;
-	private String gender;
 	private String image="https://images.app.goo.gl/Tz8mx3QDqc6rm55w6";
 	private String password;
 
@@ -37,7 +35,7 @@ public class UserModel {
 	private Set<UserDto> follower = new HashSet<UserDto>();
 
 	@Embedded
-	@ElementCollection
+	@ElementCollection(fetch = FetchType.EAGER)
 	private Set<UserDto> following = new HashSet<UserDto>();
 
 	@Embedded

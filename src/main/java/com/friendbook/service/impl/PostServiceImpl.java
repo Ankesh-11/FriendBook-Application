@@ -40,13 +40,11 @@ public class PostServiceImpl implements PostService {
 	CommentRepository commentRepository;
 
 	@Override
-	public Post createPost(Post post, Integer userId) throws UserException {
-		UserModel user = userService.findUserById(userId);
+	public Post createPost(Post post, UserModel user)  {
 
 		Post newPost = new Post();
 		newPost.setCaption(post.getCaption());
 		newPost.setImagePost(post.getImagePost());
-		newPost.setLocation(post.getLocation());
 		newPost.setCreatedAt(LocalDateTime.now());
 
 		UserDto userDto = new UserDto();
@@ -64,13 +62,9 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional
-	public void deletePost(Integer postId, Integer userId) throws UserException, PostException {
+	public void deletePost(Integer postId, UserModel user) throws UserException, PostException {
 		Post post = findPostById(postId);
-		UserModel user = userService.findUserById(userId);
-
 		if (post.getUser().getId().equals(user.getId())) {
-
-			notificationRepository.deleteByPostId(postId);
 			commentRepository.deleteByPostId(postId);
 			postRepository.deleteById(post.getId());
 		} else {
@@ -103,7 +97,7 @@ public class PostServiceImpl implements PostService {
 	public List<Post> findAllPostByUserIds(List<Integer> userIds) throws PostException {
 		List<Post> posts = postRepository.findAllPostByUserIds(userIds);
 		if (posts.isEmpty()) {
-			throw new PostException("No post avalable.");
+			throw new PostException("No post available.");
 		}
 		return posts;
 	}
@@ -142,11 +136,9 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Post unlikePost(Integer postId, Integer userId) throws PostException, UserException {
+	public Post unlikePost(Integer postId, UserModel user) throws PostException {
 
 		Post post = findPostById(postId);
-		UserModel user = userService.findUserById(userId);
-
 		UserDto userDto = new UserDto();
 		userDto.setEmail(user.getEmail());
 		userDto.setId(user.getId());
@@ -161,39 +153,12 @@ public class PostServiceImpl implements PostService {
 
 
 	@Override
-	public Integer getPostCountByUser(UserModel viewedUser) {
-		int postCount=0;
-		try {
-			postCount= findPostByUserId(viewedUser.getId()).size();
-		} catch (UserException e) {
-			System.out.println(e.getMessage());
-        }
-        return postCount;
+	public Integer getPostCountByUser(UserModel viewedUser) throws UserException {
+		return  findPostByUserId(viewedUser.getId()).size();
 	}
 
 	@Override
-	public boolean isLiked(Integer postId, UserModel userModel) {
-		try {
-			Post post = findPostById(postId);
-			return post.getLikedByUser().stream()
-					.anyMatch(dto -> dto.getId().equals(userModel.getId()));
-		} catch (PostException e) {
-			System.out.println(e.getMessage());
-			return false;
-		}
-	}
-
-	@Override
-	public boolean isPostLikedByUser(Integer postId, Integer id) throws PostException {
-		Post post = postRepository.findById(postId)
-				.orElseThrow(() -> new PostException("Post not found"));
-		UserDto userDtoToCheck = new UserDto();
-		userDtoToCheck.setId(id);
-		return post.getLikedByUser().contains(userDtoToCheck);
-	}
-
-	@Override
-	public List<Post> findAllPostsLikedByUser(Integer userId) {
-		return postRepository.findAllPostsLikedByUser(userId);
+	public List<Post> findAllPostsLikedByUser(UserModel user) {
+		return postRepository.findAllPostsLikedByUser(user.getId());
 	}
 }

@@ -36,12 +36,9 @@ public class Post {
 	@Column(nullable = false)
 	private String imagePost;
 
-	private String location;
-
 	private LocalDateTime createdAt;
 
-//	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-@OneToMany
+	@OneToMany
 	private List<Comment> comments = new ArrayList<>();
 
 	@Embedded

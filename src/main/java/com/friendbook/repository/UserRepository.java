@@ -10,14 +10,11 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserModel, Integer> {
 
-	public Optional<UserModel> findByEmail(String email);
+	 Optional<UserModel> findByEmail(String email);
 
-	public Optional<UserModel> findByUsername(String username);
-
-	@Query("SELECT u FROM UserModel u WHERE u.id IN :users")
-	public List<UserModel> findAllUserByUserIds(@Param("users") List<Integer> userIds);
+	 Optional<UserModel> findByUsername(String username);
 
 	@Query("SELECT DISTINCT u FROM UserModel u WHERE u.username LIKE %:query% OR u.email LIKE %:query%")
-	public List<UserModel> findByQuery(@Param("query") String query);
+	 List<UserModel> findByQuery(@Param("query") String query);
 
 }

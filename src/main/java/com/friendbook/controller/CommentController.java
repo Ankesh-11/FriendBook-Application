@@ -11,6 +11,7 @@ import com.friendbook.service.CommentService;
 import com.friendbook.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -21,34 +22,33 @@ import java.util.Optional;
 
 @Controller
 @RequestMapping("/api/comments")
-@AllArgsConstructor
+
 public class CommentController {
 
+	@Autowired
 	private CommentService commentService;
-	private UserService userService;
+	@Autowired
 	private UserRepository userRepository;
 
 	@PostMapping("/{postId}/comment")
-	public ResponseEntity<String> addCommentToPost(
+	public ResponseEntity<?> addCommentToPost(
 			@PathVariable Integer postId,
 			@RequestBody Comment comment,
 			HttpSession session) {
 		try {
 			UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
 			Optional<UserModel> user = userRepository.findByEmail(loggedInUser.getEmail());
-
-			if (user.isPresent()) {
-				commentService.createComment(comment, postId, user.get().getId());
-				return ResponseEntity.ok("Comment added successfully.");
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
+			if (user.isPresent()){
+				commentService.createComment(comment, postId, user.get());
+				return new ResponseEntity<>("Comment added successfully.", HttpStatus.CREATED);
+			}else {
+				return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
 			}
 		} catch (PostException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error adding comment: " + e.getMessage());
-		} catch (UserException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+			return  new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
 		}
-	}
+
+    }
 
 	@GetMapping("getCommentsByPostId/{postId}")
 	public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable int postId) {
@@ -56,27 +56,11 @@ public class CommentController {
 		try {
 			comments = commentService.getCommentsByPostId(postId);
 			return new ResponseEntity<>(comments, HttpStatus.OK);
-		} catch (PostException | UserException | CommentException e) {
+		} catch (PostException e) {
 			System.out.println(e.getMessage());
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 
-	@PutMapping("/like/{commentId}")
-	public ResponseEntity<Comment> likeCommentHandler(@RequestHeader("Authorization") String token,
-			@PathVariable Integer commentId) throws UserException, CommentException {
-
-		UserModel user = userService.findUserProfile(token);
-		Comment likeComment = commentService.likeComment(commentId, user.getId());
-
-		return new ResponseEntity<Comment>(likeComment, HttpStatus.OK);
-	}
-	@PutMapping("/unlike/{commentId}")
-	public ResponseEntity<Comment> unlikeCommentHandler(@PathVariable Integer commentId,
-			@RequestHeader("Authorization") String token) throws UserException, CommentException {
-		UserModel user = userService.findUserProfile(token);
-		Comment unlikeComment = commentService.unlikeComment(commentId, user.getId());
-		return new ResponseEntity<Comment>(unlikeComment, HttpStatus.OK);
-	}
 
 }

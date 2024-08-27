@@ -11,26 +11,22 @@ import java.util.List;
 
 public interface PostService {
 
-	public Post createPost(Post post, Integer userId) throws UserException;
+	 Post createPost(Post post, UserModel user) throws UserException;
 
 
-	public void deletePost(Integer postId, Integer userId) throws UserException, PostException;
+	 void deletePost(Integer postId, UserModel user) throws UserException, PostException;
 
-	public List<Post> findPostByUserId(Integer userId) throws UserException;
+	 List<Post> findPostByUserId(Integer userId) throws UserException;
 
-	public Post findPostById(Integer postId) throws PostException;
+	 Post findPostById(Integer postId) throws PostException;
 
-	public List<Post> findAllPostByUserIds(List<Integer> userIds) throws PostException;
+	 List<Post> findAllPostByUserIds(List<Integer> userIds) throws PostException;
 
-	public Post likePost(Integer postId, UserModel currentUser) throws PostException, UserException;
+	 Post likePost(Integer postId, UserModel currentUser) throws PostException, UserException;
 
-	public Post unlikePost(Integer postId, Integer userId) throws PostException, UserException;
+	 Post unlikePost(Integer postId, UserModel user) throws PostException;
 
-	Integer getPostCountByUser(UserModel viewedUser);
+	Integer getPostCountByUser(UserModel viewedUser) throws UserException;
 
-	boolean isLiked(Integer postId, UserModel userModel);
-
-	boolean isPostLikedByUser(Integer postId, Integer id) throws PostException;
-
-	public List<Post> findAllPostsLikedByUser(Integer userId);
+	 List<Post> findAllPostsLikedByUser(UserModel user);
 }

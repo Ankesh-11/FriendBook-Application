@@ -40,8 +40,8 @@ public class CommentServiceImpl implements CommentService {
 	private NotificationService notificationService;
 
 	@Override
-	public Comment createComment(Comment comment, Integer postId, Integer userId) throws PostException, UserException {
-		UserModel user = userService.findUserById(userId);
+	public Comment createComment(Comment comment, Integer postId, UserModel user) throws PostException {
+
 		Post post = postService.findPostById(postId);
 
 		UserDto userDto = new UserDto(user.getId(),user.getUsername(),user.getEmail(), user.getName(), user.getImage(),user.getMobile(),user.getBio());
@@ -64,11 +64,6 @@ public class CommentServiceImpl implements CommentService {
 		return newComment;
 	}
 
-	@Override
-	public Comment findCommentById(Integer commentId) throws CommentException {
-		return commentRepository.findById(commentId)
-				.orElseThrow(() -> new CommentException("Comment not exist with id: " + commentId));
-	}
 
 	@Override
 	public void deleteComment(Integer commentId, Integer currentUserId) throws PostException, UserException {
@@ -85,35 +80,7 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public Comment likeComment(Integer commentId, Integer userId) throws CommentException, UserException {
-		UserModel user = userService.findUserById(userId);
-		Comment comment = findCommentById(commentId);
-
-		UserDto userDto = new UserDto(user.getId(), user.getEmail(), user.getName(), user.getUsername(), user.getImage(), user.getMobile(), user.getBio());
-
-		comment.getLikedByUser().add(userDto);
-
-		Comment likedComment = commentRepository.save(comment);
-
-		//notificationService.sendNotification(user, comment.getUser().toUserModel(), "liked your comment",);
-
-		return likedComment;
-	}
-
-	@Override
-	public Comment unlikeComment(Integer commentId, Integer userId) throws CommentException, UserException {
-		UserModel user = userService.findUserById(userId);
-		Comment comment = findCommentById(commentId);
-
-		UserDto userDto = new UserDto(user.getId(), user.getEmail(), user.getName(), user.getUsername(), user.getImage(), user.getMobile(), user.getBio());
-
-		comment.getLikedByUser().remove(userDto);
-
-		return commentRepository.save(comment);
-	}
-
-	@Override
-	public List<Comment> getCommentsByPostId(int postId) throws CommentException, UserException, PostException {
+	public List<Comment> getCommentsByPostId(int postId) throws  PostException {
 		Post post = postService.findPostById(postId);
 		List<Comment> comments = post.getComments();
 		if (comments == null || comments.isEmpty()) {

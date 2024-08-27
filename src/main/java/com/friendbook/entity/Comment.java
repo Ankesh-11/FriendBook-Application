@@ -33,10 +33,6 @@ public class Comment {
 
 	private LocalDateTime createdAt;
 
-	@Embedded
-	@ElementCollection
-	private Set<UserDto> likedByUser = new HashSet<UserDto>();
-
 	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "post_id")
 	@JsonBackReference

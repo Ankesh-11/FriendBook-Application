@@ -1,11 +1,8 @@
 package com.friendbook.controller;
 
-import com.friendbook.Exception.PostException;
 import com.friendbook.Exception.UserException;
 import com.friendbook.entity.Post;
 import com.friendbook.entity.UserModel;
-import com.friendbook.repository.UserRepository;
-import com.friendbook.service.CommentService;
 import com.friendbook.service.FollowService;
 import com.friendbook.service.PostService;
 import com.friendbook.dto.UserDto;
@@ -31,12 +28,6 @@ public class HomeController {
 
     @Autowired
     UserService userService;
-
-    @Autowired
-    CommentService commentService;
-
-    @Autowired
-    UserRepository userRepository;
 
     @GetMapping
     public String homePagePost(HttpSession session, Model model) {
@@ -76,7 +67,7 @@ public class HomeController {
                     likedPostsMap.put(post.getId(), likedByCurrentUser);
                 }
 
-                Set<UserDto> requests = followService.getFollowRequests(loggedInUser);
+                 Set<UserDto> requests = followService.getFollowRequests(loggedInUser);
                 Map<Integer, Boolean> isFollowingMap = new HashMap<>();
                 for (UserDto request : requests) {
                     boolean isFollowing = followService.isFollowing(loggedInUser.getId(), request.getId());
@@ -109,11 +100,6 @@ public class HomeController {
         return "redirect:/signin";
     }
 
-    @GetMapping("/search")
-    public String searchPosts() {
-        return "search";
-    }
-
     @PostMapping("/search")
     public ResponseEntity<?> searchUserHandler(@RequestParam("q") String query,HttpSession session) {
         List<UserModel> users = null;
@@ -125,33 +111,4 @@ public class HomeController {
         return new ResponseEntity<List<UserModel>>(users, HttpStatus.OK);
     }
 
-    @PutMapping("/posts/{postId}/like")
-    public ResponseEntity<?> likePost(@PathVariable Integer postId, @RequestParam("email") String email,HttpSession session)  {
-        try {
-            UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
-
-            if (loggedInUser!= null) {
-                Post likedPost = postService.likePost(postId,loggedInUser);
-                return new ResponseEntity<>(likedPost, HttpStatus.OK);
-            }
-        } catch (PostException | UserException e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @PutMapping("/posts/{postId}/unlike")
-    public ResponseEntity<Post> unlikePost(@PathVariable Integer postId, @RequestParam("email") String email) {
-        try {
-            Optional<UserModel> user = userRepository.findByEmail(email);
-            if (user.isPresent()) {
-                Post unlikedPost = postService.unlikePost(postId, user.get().getId());
-                return new ResponseEntity<>(unlikedPost, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-    }
 }

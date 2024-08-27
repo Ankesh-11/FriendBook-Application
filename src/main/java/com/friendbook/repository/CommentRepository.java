@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Integer> {
+
     void deleteByPostId(Integer postId);
-    List<Comment> findByPostId(Integer postId);
 
     @Query("SELECT c FROM Comment c WHERE c.user.id = :userId")
     List<Comment> findAllCommentsByUserId(@Param("userId") Integer userId);

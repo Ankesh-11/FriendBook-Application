@@ -21,9 +21,6 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    @Autowired
-    private UserService userService;
-
     @GetMapping("/notifications")
     public ResponseEntity<List<NotificationDTO>> getNotifications(HttpSession session){
         try {
@@ -34,27 +31,4 @@ public class NotificationController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-//    @PostMapping("/accept/{requesterId}")
-//    public ResponseEntity<String> acceptFollowRequest(@RequestHeader("Authorization") String token, @PathVariable Integer requesterId) {
-//        try {
-//            UserModel user = userService.findUserProfile(token);
-//            notificationService.acceptFollowRequest(user, requesterId);
-//            return ResponseEntity.ok("Follow request accepted");
-//        } catch (UserException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-//
-//    @PostMapping("/decline/{userId}/{requesterId}")
-//    public ResponseEntity<String> declineFollowRequest(@PathVariable Integer userId, @PathVariable Integer requesterId) {
-//        try {
-//            UserModel user = userService.findUserById(userId);
-//            UserModel requester = userService.findUserById(requesterId);
-//            notificationService.declineFollowRequest(user, requester);
-//            return ResponseEntity.ok("Follow request declined");
-//        } catch (UserException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
 }

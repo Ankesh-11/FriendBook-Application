@@ -1,4 +1,4 @@
-package com.friendbook.controller;
+package com.friendbook.service;
 
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;

@@ -11,15 +11,9 @@ public interface UserService {
 
 	 UserModel registerUser(UserModel user) throws UserException;
 
-	 List<UserModel> findAllUser() throws UserException;
-
 	 UserModel findUserById(Integer userId) throws UserException;
 
-	 UserModel findUserProfile(String token) throws UserException;
-
 	 UserModel findUserByUsername(String username) throws UserException;
-
-	 List<UserModel> findUsersByUserIds(List<Integer> userIds);
 
 	 List<UserModel> searchUser(String query) throws UserException;
 

@@ -114,10 +114,17 @@ public class FollowServiceImpl implements FollowService {
     }
 
     @Override
+    @Transactional
     public void unfollowUser(UserModel reqUser, UserModel unfollowUser) throws UserException {
 
         UserDto currUserDto = new UserDto(reqUser.getId(), reqUser.getUsername(), reqUser.getEmail(), reqUser.getName(), reqUser.getImage(), reqUser.getMobile(), reqUser.getBio());
         UserDto otherUserDto = new UserDto(unfollowUser.getId(), unfollowUser.getUsername(), unfollowUser.getEmail(), unfollowUser.getName(), unfollowUser.getImage(), unfollowUser.getMobile(), unfollowUser.getBio());
+
+        if (unfollowUser.getFollower().contains(currUserDto)) {
+            unfollowUser.getFollower().remove(currUserDto);
+        } else {
+            throw new UserException("User is not in followers list");
+        }
 
         if (reqUser.getFollowing().contains(otherUserDto)) {
             reqUser.getFollowing().remove(otherUserDto);
@@ -125,11 +132,7 @@ public class FollowServiceImpl implements FollowService {
             throw new UserException("You are not following this user");
         }
 
-        if (unfollowUser.getFollower().contains(currUserDto)) {
-            unfollowUser.getFollower().remove(currUserDto);
-        } else {
-            throw new UserException("User is not in followers list");
-        }
+
         userRepository.save(reqUser);
         userRepository.save(unfollowUser);
     }

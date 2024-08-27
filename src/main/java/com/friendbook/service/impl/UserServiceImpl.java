@@ -28,28 +28,10 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	CommentRepository commentRepository;
 
-//	@Autowired
-//	private PasswordEncoder passwordEncoder;
-
-//	@Autowired
-//	private JwtTokenProvider jwtTokenProvider;
-
 	@Autowired
 	PostRepository postRepository;
 	@Autowired
 	PostService postService;
-
-	@Autowired
-	CommentService commentService;
-
-	@Override
-	public List<UserModel> findAllUser() throws UserException {
-		List<UserModel> users = userRepository.findAll();
-		if (users.size() == 0) {
-			throw new UserException("user not exist");
-		}
-		return users;
-	}
 
 	@Override
 	public UserModel registerUser(UserModel user) throws UserException {
@@ -79,6 +61,7 @@ public class UserServiceImpl implements UserService {
 
 		return userRepository.save(newUser);
 	}
+
 	@Transactional
 	@Override
 	public UserModel findUserById(Integer userId) throws UserException {
@@ -87,24 +70,6 @@ public class UserServiceImpl implements UserService {
 			return optionalUser.get();
 		}
 		throw new UserException("user not exist with id: " + userId);
-	}
-	@Override
-	public UserModel findUserProfile(String token) throws UserException {
-		// Bearer jsjsalssalskalsa
-//		token = token.substring(7);
-//
-//		JwtTokenClaims jwtTokenClaims = jwtTokenProvider.getClaimsFromToken(token);
-//
-//		String email = jwtTokenClaims.getUsername();
-//
-//		Optional<UserModel> optionalUser = userRepository.findByEmail(email);
-//
-//		if (optionalUser.isPresent()) {
-//			return optionalUser.get();
-//		}
-//
-//		throw new UserException("Invalid Token...");
-		return new UserModel();
 	}
 
 	@Override
@@ -116,13 +81,6 @@ public class UserServiceImpl implements UserService {
 			return user;
 		}
 		throw new UserException("user not exist with username " + username);
-	}
-
-
-	@Override
-	public List<UserModel> findUsersByUserIds(List<Integer> userIds) {
-		List<UserModel> users = userRepository.findAllUserByUserIds(userIds);
-		return users;
 	}
 
 	@Override
@@ -159,7 +117,7 @@ public class UserServiceImpl implements UserService {
 			postRepository.save(post);
         }
 
-		List<Post> likedPost = postService.findAllPostsLikedByUser(existingUser.getId());
+		List<Post> likedPost = postService.findAllPostsLikedByUser(existingUser);
 		for (Post post : likedPost) {
 			Set<UserDto> likedByUsers = post.getLikedByUser();
 			for (UserDto userDto : likedByUsers) {
@@ -186,7 +144,6 @@ public class UserServiceImpl implements UserService {
 		return existingUser;
 
     }
-
 
 	private String getUsername(String name)
 	{

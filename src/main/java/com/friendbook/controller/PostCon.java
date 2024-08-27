@@ -27,35 +27,30 @@ public class PostCon {
     private PostService postService;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private UserRepository userRepository;
 
-
     @PostMapping("/create")
-    public ResponseEntity<Post> createPostHandler(@RequestBody Post post, @RequestHeader("email") String email, Model model) throws UserException {
+    public ResponseEntity<?> createPostHandler(@RequestBody Post post, @RequestHeader("email") String email, Model model)  {
         Post createdPost = null;
         try {
             Optional<UserModel> user = userRepository.findByEmail(email);
             if (user.isPresent()) {
-                createdPost = postService.createPost(post, user.get().getId());
+                createdPost = postService.createPost(post, user.get());
             }
         } catch (UserException e) {
-            model.addAttribute("error", e.getMessage());
-            return new ResponseEntity<>(createdPost, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(createdPost, HttpStatus.CREATED);
     }
 
     @PostMapping("/delete/{postId}")
-    public ResponseEntity<String> deletePostHandler(@PathVariable Integer postId,HttpSession session) throws UserException {
+    public ResponseEntity<String> deletePostHandler(@PathVariable Integer postId,HttpSession session)  {
         UserModel currentUser = (UserModel) session.getAttribute("loggedInUser");
         try {
-            postService.deletePost(postId, currentUser.getId());
+            postService.deletePost(postId, currentUser);
             return new ResponseEntity<>("Post deleted successfully", HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (PostException | UserException e  ) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
 
@@ -92,17 +87,14 @@ public class PostCon {
     }
 
     @GetMapping("/{postId}")
-    public ResponseEntity<Post> getPostDetails(@PathVariable int postId) {
+    public ResponseEntity<?> getPostDetails(@PathVariable int postId) {
            try
            {
                Post post = postService.findPostById(postId);
-               if (post != null) {
-                   return ResponseEntity.ok(post);
-               } else {
-                   return ResponseEntity.notFound().build();
-               }
+               return new ResponseEntity<>(post,HttpStatus.FOUND);
+
            } catch (PostException e) {
-               return ResponseEntity.notFound().build();
+               return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_FOUND);
            }
     }
 
@@ -114,7 +106,7 @@ public class PostCon {
             Set<UserDto> likedUsers = post.getLikedByUser();
 
             List<UserDto> users = likedUsers.stream()
-                    .map(user -> new UserDto(user.getId(), user.getUsername(), user.getImage(),user.getName())) // Assuming UserDto has these fields
+                    .map(user -> new UserDto(user.getId(), user.getUsername(), user.getImage(),user.getName()))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(users);
         } catch (PostException e) {
@@ -149,17 +141,17 @@ public class PostCon {
             UserModel loggedInUser = (UserModel) session.getAttribute("loggedInUser");
             Optional<UserModel> user = userRepository.findByEmail(loggedInUser.getEmail());
             if (user.isPresent()) {
-                Post unlikedPost = postService.unlikePost(postId, user.get().getId());
+                Post unlikedPost = postService.unlikePost(postId, user.get());
                 Map<String, Object> response = new HashMap<>();
                 response.put("liked", false);
                 response.put("post", unlikedPost);
                 response.put("likeCount", unlikedPost.getLikedByUser().size());
                 return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             }
         }
-        catch (PostException | UserException e) {
+        catch (PostException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
